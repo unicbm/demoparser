@@ -3,6 +3,8 @@ name = "csgoproto"
 version = "0.1.5"
 authors = ["Laiho"]
 edition = "2021"
+license-file = "../../LICENSE"
+publish = false
 
 [lib]
 crate-type = ["lib"]

@@ -1,0 +1,33 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "demoparser",
+      "include-component-in-tag": true,
+      "component": "dtr",
+      "changelog-sections": [
+        {
+          "type": "feat",
+          "section": "Features"
+        },
+        {
+          "type": "fix",
+          "section": "Fixes"
+        },
+        {
+          "type": "deps",
+          "section": "Dependencies"
+        },
+        {
+          "type": "refactor",
+          "section": "Maintenance"
+        },
+        {
+          "type": "perf",
+          "section": "Performance"
+        }
+      ]
+    }
+  },
+  "bootstrap-sha": "f0bbb0d2863e63373ae2fd53e2626022616cae22"
+}

@@ -1,0 +1,10 @@
+[workspace]
+members = ["src/parser", "src/csgoproto"]
+resolver = "2"
+
+# Preserve the maintained parser's build profile at its new workspace root.
+[profile.dev]
+overflow-checks = false
+
+[profile.release]
+debug = true

@@ -1,0 +1,8 @@
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Preserve the upstream README verbatim, including Markdown hard line breaks.
+README.upstream.md whitespace=-blank-at-eol

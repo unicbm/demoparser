@@ -13,6 +13,13 @@ use memmap2::MmapOptions;
 use std::collections::BTreeMap;
 use std::fs::File;
 
+fn open_fixture() -> File {
+    let path = std::env::var_os("DEMOPARSER_TEST_DEMO")
+        .map(std::path::PathBuf::from)
+        .expect("set DEMOPARSER_TEST_DEMO to the original upstream test_demo.dem; no demo fixture is bundled");
+    File::open(&path).unwrap_or_else(|error| panic!("cannot open DEMOPARSER_TEST_DEMO {}: {error}", path.display()))
+}
+
 pub fn _create_ge_tests() {
     let wanted_props = vec![
         "CCSPlayerPawn.CBodyComponentBaseAnimGraph.m_flLastTeleportTime".to_string(),
@@ -322,7 +329,7 @@ pub fn _create_ge_tests() {
 
     let mut ds = Parser::new(settings, crate::parse_demo::ParsingMode::ForceSingleThreaded);
     // ds.is_multithreadable = false;
-    let file = File::open("test_demo.dem".to_string()).unwrap();
+    let file = open_fixture();
     let mmap = unsafe { MmapOptions::new().map(&file).unwrap() };
     let d = ds.parse_demo(&mmap).unwrap();
 
@@ -699,7 +706,7 @@ pub fn _create_tests() {
     };
 
     let mut ds = Parser::new(settings, crate::parse_demo::ParsingMode::ForceSingleThreaded);
-    let file = File::open("test_demo.dem".to_string()).unwrap();
+    let file = open_fixture();
     let mmap = unsafe { MmapOptions::new().map(&file).unwrap() };
     let d = ds.parse_demo(&mmap).unwrap();
     let mut custom = AHashMap::default();
@@ -1073,7 +1080,7 @@ fn create_data() -> (DemoOutput, PropController, BTreeMap<String, Vec<GameEvent>
     };
 
     let mut ds = Parser::new(settings, crate::parse_demo::ParsingMode::ForceSingleThreaded);
-    let file = File::open("test_demo.dem".to_string()).unwrap();
+    let file = open_fixture();
     let mmap = unsafe { MmapOptions::new().map(&file).unwrap() };
     let out1 = ds.parse_demo(&mmap).unwrap();
 
@@ -1101,7 +1108,7 @@ fn create_data() -> (DemoOutput, PropController, BTreeMap<String, Vec<GameEvent>
         cancelled: None,
     };
     let mut ds = Parser::new(settings, crate::parse_demo::ParsingMode::ForceSingleThreaded);
-    let file = File::open("test_demo.dem".to_string()).unwrap();
+    let file = open_fixture();
     let mmap = unsafe { MmapOptions::new().map(&file).unwrap() };
     let out2 = ds.parse_demo(&mmap).unwrap();
 
@@ -1186,11 +1193,11 @@ mod tests {
     use lazy_static::lazy_static;
     use memmap2::MmapOptions;
     use std::collections::BTreeMap;
-    use std::fs::File;
     lazy_static! {
         static ref out: (DemoOutput, PropController, BTreeMap<std::string::String, Vec<GameEvent>>) = create_data();
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn test_player_filter() {
         let huf = create_huffman_lookup_table();
 
@@ -1215,7 +1222,7 @@ mod tests {
             cancelled: None,
         };
         let mut ds = Parser::new(settings, crate::parse_demo::ParsingMode::ForceSingleThreaded);
-        let file = File::open("test_demo.dem").unwrap();
+        let file = super::open_fixture();
         let mmap = unsafe { MmapOptions::new().map(&file).unwrap() };
         let output = ds.parse_demo(&mmap).unwrap();
 
@@ -1225,6 +1232,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CEconItemAttribute_m_nRefundableCurrency() {
         let prop = (
             "CEconItemAttribute.m_nRefundableCurrency",
@@ -1278,6 +1286,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_bWarmupPeriod() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_bWarmupPeriod",
@@ -1331,6 +1340,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn is_airborne() {
         let prop = (
             "is_airborne",
@@ -1387,12 +1397,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_nQuestProgressReason() {
         let prop = ("CCSPlayerController.m_nQuestProgressReason", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iCashEarned() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iCashEarned",
@@ -1402,6 +1414,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_lifeState() {
         let prop = (
             "CCSPlayerPawn.m_lifeState",
@@ -1455,6 +1468,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_unTotalRoundDamageDealt() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_unTotalRoundDamageDealt",
@@ -1508,6 +1522,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_iClip2() {
         let prop = (
             "m_iClip2",
@@ -1561,6 +1576,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_thirdPersonHeading() {
         let prop = (
             "CCSPlayerPawn.m_thirdPersonHeading",
@@ -1614,6 +1630,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_bDesiresDuck() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_bDesiresDuck",
@@ -1667,6 +1684,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_vecLadderNormal() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_vecLadderNormal",
@@ -1720,6 +1738,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_bEverPlayedOnTeam() {
         let prop = (
             "CCSPlayerController.m_bEverPlayedOnTeam",
@@ -1773,6 +1792,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bInBombZone() {
         let prop = (
             "CCSPlayerPawn.m_bInBombZone",
@@ -1826,6 +1846,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iKills() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iKills",
@@ -1879,6 +1900,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nEnablePhysics() {
         let prop = (
             "m_nEnablePhysics",
@@ -1932,6 +1954,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_iShotsFired() {
         let prop = (
             "CCSPlayerPawn.m_iShotsFired",
@@ -1985,6 +2008,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_bReloadVisuallyComplete() {
         let prop = (
             "m_bReloadVisuallyComplete",
@@ -2038,6 +2062,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_usSolidFlags() {
         let prop = (
             "m_usSolidFlags",
@@ -2091,6 +2116,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_bFreezePeriod() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_bFreezePeriod",
@@ -2144,6 +2170,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_ArmorValue() {
         let prop = (
             "CCSPlayerPawn.m_ArmorValue",
@@ -2197,6 +2224,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_fEffects() {
         let prop = (
             "m_fEffects",
@@ -2250,76 +2278,83 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn weapon_stickers() {
         let prop = (
             "weapon_stickers",
             PropColumn {
-                data: Some(Stickers(vec![
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![Sticker {
-                        slot: 0,
-                        name: "eslcologne2015_signature_taz_foil".to_string(),
-                        wear: 0.0,
-                        id: 477,
-                        x: 6.711e-42,
-                        y: 6.711e-42,
-                        scale: None,
-                        rotation: None,
-                    }],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![Sticker {
-                        slot: 0,
-                        name: "eslcologne2015_signature_taz_gold".to_string(),
-                        wear: 0.0,
-                        id: 478,
-                        x: 6.711e-42,
-                        y: 6.711e-42,
-                        scale: None,
-                        rotation: None,
-                    }],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                    vec![],
-                ].into_iter().map(Into::into).collect())),
+                data: Some(Stickers(
+                    vec![
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![Sticker {
+                            slot: 0,
+                            name: "eslcologne2015_signature_taz_foil".to_string(),
+                            wear: 0.0,
+                            id: 477,
+                            x: 6.711e-42,
+                            y: 6.711e-42,
+                            scale: None,
+                            rotation: None,
+                        }],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![Sticker {
+                            slot: 0,
+                            name: "eslcologne2015_signature_taz_gold".to_string(),
+                            wear: 0.0,
+                            id: 478,
+                            x: 6.711e-42,
+                            y: 6.711e-42,
+                            scale: None,
+                            rotation: None,
+                        }],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                        vec![],
+                    ]
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
+                )),
                 num_nones: 0,
             },
         );
         assert_eq!(out.0.df[&WEAPON_STICKERS_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn weapon_float() {
         let prop = (
             "weapon_float",
@@ -2373,6 +2408,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn weapon_paint_seed() {
         let prop = (
             "weapon_paint_seed",
@@ -2426,6 +2462,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nEntityId() {
         let prop = (
             "m_nEntityId",
@@ -2479,6 +2516,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iDeaths() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iDeaths",
@@ -2532,6 +2570,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_fMatchStartTime() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_fMatchStartTime",
@@ -2585,6 +2624,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iCompetitiveRankingPredicted_Tie() {
         let prop = (
             "CCSPlayerController.m_iCompetitiveRankingPredicted_Tie",
@@ -2638,6 +2678,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flHitHeading() {
         let prop = (
             "CCSPlayerPawn.m_flHitHeading",
@@ -2691,6 +2732,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nNextThinkTick() {
         let prop = (
             "m_nNextThinkTick",
@@ -2744,6 +2786,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nHitBodyPart() {
         let prop = (
             "CCSPlayerPawn.m_nHitBodyPart",
@@ -2797,6 +2840,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_flNextPrimaryAttackTickRatio() {
         let prop = (
             "m_flNextPrimaryAttackTickRatio",
@@ -2850,6 +2894,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_vRagdollDamagePosition() {
         let prop = (
             "CCSPlayerPawn.m_vRagdollDamagePosition",
@@ -2903,6 +2948,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iMVPs() {
         let prop = (
             "CCSPlayerController.m_iMVPs",
@@ -2956,6 +3002,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InventoryServices_m_rank() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InventoryServices.m_rank",
@@ -3009,6 +3056,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bRagdollDamageHeadshot() {
         let prop = (
             "CCSPlayerPawn.m_bRagdollDamageHeadshot",
@@ -3062,6 +3110,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nFireSequenceStartTimeChange() {
         let prop = (
             "m_nFireSequenceStartTimeChange",
@@ -3115,6 +3164,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_iMatchStats_RoundResults() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_iMatchStats_RoundResults",
@@ -3168,29 +3218,206 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_bPawnHasHelmet() {
         let prop = ("CCSPlayerController.m_bPawnHasHelmet", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn inventory() {
         let prop = (
             "inventory",
-            PropColumn { data: Some(StringVec(vec![vec!["knife_t".to_string(), "Desert Eagle".to_string(), "Smoke Grenade".to_string(), "Flashbang".to_string(), "Flashbang".to_string()], vec!["Bowie Knife".to_string(), "USP-S".to_string()], vec!["knife_t".to_string(), "Desert Eagle".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string(), "High Explosive Grenade".to_string()], vec!["knife".to_string(), "USP-S".to_string()], vec!["knife".to_string(), "P2000".to_string()], vec!["M9 Bayonet".to_string(), "USP-S".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "C4 Explosive".to_string(), "AK-47".to_string(), "Smoke Grenade".to_string()], vec!["knife".to_string(), "USP-S".to_string()], vec!["knife_t".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string(), "Flashbang".to_string(), "Flashbang".to_string()], vec!["Bowie Knife".to_string(), "USP-S".to_string(), "M4A4".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "MAC-10".to_string()], vec![], vec!["knife".to_string(), "P2000".to_string(), "M4A4".to_string()], vec!["M9 Bayonet".to_string(), "USP-S".to_string(), "AK-47".to_string(), "Smoke Grenade".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "MAC-10".to_string(), "Smoke Grenade".to_string(), "Flashbang".to_string(), "Flashbang".to_string(), "C4 Explosive".to_string()], vec!["knife".to_string(), "USP-S".to_string(), "FAMAS".to_string()], vec!["Huntsman Knife".to_string(), "Glock-18".to_string(), "SSG 08".to_string(), "Flashbang".to_string()], vec!["knife_t".to_string(), "AK-47".to_string(), "Desert Eagle".to_string()], vec!["Bowie Knife".to_string(), "Desert Eagle".to_string()], vec![], vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string()], vec!["knife".to_string(), "USP-S".to_string(), "M4A1-S".to_string()], vec![], vec!["M9 Bayonet".to_string(), "USP-S".to_string(), "M4A1-S".to_string(), "Flashbang".to_string(), "Flashbang".to_string()], vec![], vec!["knife".to_string(), "P250".to_string()], vec!["Huntsman Knife".to_string(), "SSG 08".to_string(), "P250".to_string(), "Smoke Grenade".to_string(), "Flashbang".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string(), "Smoke Grenade".to_string(), "Molotov".to_string(), "Flashbang".to_string(), "Flashbang".to_string()], vec!["Bowie Knife".to_string(), "USP-S".to_string(), "M4A1-S".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string(), "Molotov".to_string(), "High Explosive Grenade".to_string(), "Smoke Grenade".to_string(), "Flashbang".to_string()], vec!["knife".to_string(), "USP-S".to_string()], vec!["knife".to_string(), "P2000".to_string(), "Smoke Grenade".to_string(), "High Explosive Grenade".to_string(), "Incendiary Grenade".to_string()], vec!["M9 Bayonet".to_string(), "USP-S".to_string()], vec!["knife_t".to_string(), "Glock-18".to_string(), "C4 Explosive".to_string(), "AWP".to_string(), "Smoke Grenade".to_string(), "Molotov".to_string(), "High Explosive Grenade".to_string()], vec!["knife".to_string(), "USP-S".to_string()], vec!["Huntsman Knife".to_string(), "AK-47".to_string(), "R8 Revolver".to_string(), "High Explosive Grenade".to_string(), "Molotov".to_string(), "Smoke Grenade".to_string(), "Flashbang".to_string()]])), num_nones: 0 
-            }
+            PropColumn {
+                data: Some(StringVec(vec![
+                    vec![
+                        "knife_t".to_string(),
+                        "Desert Eagle".to_string(),
+                        "Smoke Grenade".to_string(),
+                        "Flashbang".to_string(),
+                        "Flashbang".to_string(),
+                    ],
+                    vec!["Bowie Knife".to_string(), "USP-S".to_string()],
+                    vec!["knife_t".to_string(), "Desert Eagle".to_string()],
+                    vec![
+                        "knife_t".to_string(),
+                        "Glock-18".to_string(),
+                        "AK-47".to_string(),
+                        "High Explosive Grenade".to_string(),
+                    ],
+                    vec!["knife".to_string(), "USP-S".to_string()],
+                    vec!["knife".to_string(), "P2000".to_string()],
+                    vec!["M9 Bayonet".to_string(), "USP-S".to_string()],
+                    vec![
+                        "knife_t".to_string(),
+                        "Glock-18".to_string(),
+                        "C4 Explosive".to_string(),
+                        "AK-47".to_string(),
+                        "Smoke Grenade".to_string(),
+                    ],
+                    vec!["knife".to_string(), "USP-S".to_string()],
+                    vec!["knife_t".to_string()],
+                    vec![
+                        "knife_t".to_string(),
+                        "Glock-18".to_string(),
+                        "AK-47".to_string(),
+                        "Flashbang".to_string(),
+                        "Flashbang".to_string(),
+                    ],
+                    vec!["Bowie Knife".to_string(), "USP-S".to_string(), "M4A4".to_string()],
+                    vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string()],
+                    vec!["knife_t".to_string(), "Glock-18".to_string(), "MAC-10".to_string()],
+                    vec![],
+                    vec!["knife".to_string(), "P2000".to_string(), "M4A4".to_string()],
+                    vec!["M9 Bayonet".to_string(), "USP-S".to_string(), "AK-47".to_string(), "Smoke Grenade".to_string()],
+                    vec![
+                        "knife_t".to_string(),
+                        "Glock-18".to_string(),
+                        "MAC-10".to_string(),
+                        "Smoke Grenade".to_string(),
+                        "Flashbang".to_string(),
+                        "Flashbang".to_string(),
+                        "C4 Explosive".to_string(),
+                    ],
+                    vec!["knife".to_string(), "USP-S".to_string(), "FAMAS".to_string()],
+                    vec![
+                        "Huntsman Knife".to_string(),
+                        "Glock-18".to_string(),
+                        "SSG 08".to_string(),
+                        "Flashbang".to_string(),
+                    ],
+                    vec!["knife_t".to_string(), "AK-47".to_string(), "Desert Eagle".to_string()],
+                    vec!["Bowie Knife".to_string(), "Desert Eagle".to_string()],
+                    vec![],
+                    vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string()],
+                    vec!["knife".to_string(), "USP-S".to_string(), "M4A1-S".to_string()],
+                    vec![],
+                    vec![
+                        "M9 Bayonet".to_string(),
+                        "USP-S".to_string(),
+                        "M4A1-S".to_string(),
+                        "Flashbang".to_string(),
+                        "Flashbang".to_string(),
+                    ],
+                    vec![],
+                    vec!["knife".to_string(), "P250".to_string()],
+                    vec![
+                        "Huntsman Knife".to_string(),
+                        "SSG 08".to_string(),
+                        "P250".to_string(),
+                        "Smoke Grenade".to_string(),
+                        "Flashbang".to_string(),
+                    ],
+                    vec![
+                        "knife_t".to_string(),
+                        "Glock-18".to_string(),
+                        "AK-47".to_string(),
+                        "Smoke Grenade".to_string(),
+                        "Molotov".to_string(),
+                        "Flashbang".to_string(),
+                        "Flashbang".to_string(),
+                    ],
+                    vec!["Bowie Knife".to_string(), "USP-S".to_string(), "M4A1-S".to_string()],
+                    vec!["knife_t".to_string(), "Glock-18".to_string(), "AK-47".to_string()],
+                    vec![
+                        "knife_t".to_string(),
+                        "Glock-18".to_string(),
+                        "AK-47".to_string(),
+                        "Molotov".to_string(),
+                        "High Explosive Grenade".to_string(),
+                        "Smoke Grenade".to_string(),
+                        "Flashbang".to_string(),
+                    ],
+                    vec!["knife".to_string(), "USP-S".to_string()],
+                    vec![
+                        "knife".to_string(),
+                        "P2000".to_string(),
+                        "Smoke Grenade".to_string(),
+                        "High Explosive Grenade".to_string(),
+                        "Incendiary Grenade".to_string(),
+                    ],
+                    vec!["M9 Bayonet".to_string(), "USP-S".to_string()],
+                    vec![
+                        "knife_t".to_string(),
+                        "Glock-18".to_string(),
+                        "C4 Explosive".to_string(),
+                        "AWP".to_string(),
+                        "Smoke Grenade".to_string(),
+                        "Molotov".to_string(),
+                        "High Explosive Grenade".to_string(),
+                    ],
+                    vec!["knife".to_string(), "USP-S".to_string()],
+                    vec![
+                        "Huntsman Knife".to_string(),
+                        "AK-47".to_string(),
+                        "R8 Revolver".to_string(),
+                        "High Explosive Grenade".to_string(),
+                        "Molotov".to_string(),
+                        "Smoke Grenade".to_string(),
+                        "Flashbang".to_string(),
+                    ],
+                ])),
+                num_nones: 0,
+            },
         );
         assert_eq!(out.0.df[&INVENTORY_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn inventory_as_ids() {
         let prop = (
             "inventory_as_ids",
-            PropColumn { data: Some(U32Vec(vec![vec![59, 1, 45, 43, 43], vec![514, 61], vec![59, 1], vec![59, 4, 7, 44], vec![42, 61], vec![42, 32], vec![508, 61], vec![59, 4, 49, 7, 45], vec![42, 61], vec![59], vec![59, 4, 7, 43, 43], vec![514, 61, 16], vec![59, 4, 7], vec![59, 4, 17], vec![], vec![42, 32, 16], vec![508, 61, 7, 45], vec![59, 4, 17, 45, 43, 43, 49], vec![42, 61, 10], vec![509, 4, 40, 43], vec![59, 7, 1], vec![514, 1], vec![], vec![59, 4, 7], vec![42, 61, 60], vec![], vec![508, 61, 60, 43, 43], vec![], vec![42, 36], vec![509, 40, 36, 45, 43], vec![59, 4, 7, 45, 46, 43, 43], vec![514, 61, 60], vec![59, 4, 7], vec![59, 4, 7, 46, 44, 45, 43], vec![42, 61], vec![42, 32, 45, 44, 48], vec![508, 61], vec![59, 4, 49, 9, 45, 46, 44], vec![42, 61], vec![509, 7, 64, 44, 46, 45, 43]])), num_nones: 0 },
+            PropColumn {
+                data: Some(U32Vec(vec![
+                    vec![59, 1, 45, 43, 43],
+                    vec![514, 61],
+                    vec![59, 1],
+                    vec![59, 4, 7, 44],
+                    vec![42, 61],
+                    vec![42, 32],
+                    vec![508, 61],
+                    vec![59, 4, 49, 7, 45],
+                    vec![42, 61],
+                    vec![59],
+                    vec![59, 4, 7, 43, 43],
+                    vec![514, 61, 16],
+                    vec![59, 4, 7],
+                    vec![59, 4, 17],
+                    vec![],
+                    vec![42, 32, 16],
+                    vec![508, 61, 7, 45],
+                    vec![59, 4, 17, 45, 43, 43, 49],
+                    vec![42, 61, 10],
+                    vec![509, 4, 40, 43],
+                    vec![59, 7, 1],
+                    vec![514, 1],
+                    vec![],
+                    vec![59, 4, 7],
+                    vec![42, 61, 60],
+                    vec![],
+                    vec![508, 61, 60, 43, 43],
+                    vec![],
+                    vec![42, 36],
+                    vec![509, 40, 36, 45, 43],
+                    vec![59, 4, 7, 45, 46, 43, 43],
+                    vec![514, 61, 60],
+                    vec![59, 4, 7],
+                    vec![59, 4, 7, 46, 44, 45, 43],
+                    vec![42, 61],
+                    vec![42, 32, 45, 44, 48],
+                    vec![508, 61],
+                    vec![59, 4, 49, 9, 45, 46, 44],
+                    vec![42, 61],
+                    vec![509, 7, 64, 44, 46, 45, 43],
+                ])),
+                num_nones: 0,
+            },
         );
         assert_eq!(out.0.df[&INVENTORY_AS_IDS_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_iProgressBarDuration() {
         let prop = (
             "CCSPlayerPawn.m_iProgressBarDuration",
@@ -3244,6 +3471,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bSpotted() {
         let prop = (
             "CCSPlayerPawn.m_bSpotted",
@@ -3297,6 +3525,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_iNumConsecutiveTerroristLoses() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_iNumConsecutiveTerroristLoses",
@@ -3350,6 +3579,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bWaitForNoAttack() {
         let prop = (
             "CCSPlayerPawn.m_bWaitForNoAttack",
@@ -3403,6 +3633,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bSpottedByMask() {
         let prop = (
             "CCSPlayerPawn.m_bSpottedByMask",
@@ -3456,6 +3687,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_nRandomSeedOffset() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_nRandomSeedOffset",
@@ -3509,6 +3741,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_cellY() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_cellY",
@@ -3562,6 +3795,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iCompetitiveRankingPredicted_Win() {
         let prop = (
             "CCSPlayerController.m_iCompetitiveRankingPredicted_Win",
@@ -3615,6 +3849,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flEmitSoundTime() {
         let prop = (
             "CCSPlayerPawn.m_flEmitSoundTime",
@@ -3668,6 +3903,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_angEyeAngles() {
         let prop = (
             "CCSPlayerPawn.m_angEyeAngles",
@@ -3721,6 +3957,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flDeathTime() {
         let prop = (
             "CCSPlayerPawn.m_flDeathTime",
@@ -3774,6 +4011,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn pitch() {
         let prop = (
             "pitch",
@@ -3826,6 +4064,7 @@ mod tests {
         assert_eq!(out.0.df[&PITCH_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_iMatchStats_PlayersAlive_CT() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_iMatchStats_PlayersAlive_CT",
@@ -3879,6 +4118,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nInteractsWith() {
         let prop = (
             "CCSPlayerPawn.m_nInteractsWith",
@@ -3932,6 +4172,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_nRoundsPlayedThisPhase() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_nRoundsPlayedThisPhase",
@@ -3985,6 +4226,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iNumRoundKillsHeadshots() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iNumRoundKillsHeadshots",
@@ -4038,6 +4280,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InventoryServices_m_nPersonaDataPublicLevel() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InventoryServices.m_nPersonaDataPublicLevel",
@@ -4091,6 +4334,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_nButtonDownMaskPrev() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_nButtonDownMaskPrev",
@@ -4144,6 +4388,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn velocity() {
         let prop = (
             "velocity",
@@ -4196,6 +4441,7 @@ mod tests {
         assert_eq!(out.0.df[&VELOCITY_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_fStashGrenadeParameterWhen() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_fStashGrenadeParameterWhen",
@@ -4249,6 +4495,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn Y() {
         let prop = (
             "Y",
@@ -4301,6 +4548,7 @@ mod tests {
         assert_eq!(out.0.df[&PLAYER_Y_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_fMolotovDamageTime() {
         let prop = (
             "CCSPlayerPawn.m_fMolotovDamageTime",
@@ -4354,6 +4602,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iUtilityDamage() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iUtilityDamage",
@@ -4407,6 +4656,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_timeUntilNextPhaseStarts() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_timeUntilNextPhaseStarts",
@@ -4460,6 +4710,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_iHealth() {
         let prop = (
             "CCSPlayerPawn.m_iHealth",
@@ -4513,6 +4764,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_bInReload() {
         let prop = (
             "m_bInReload",
@@ -4566,6 +4818,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iPendingTeamNum() {
         let prop = (
             "CCSPlayerController.m_iPendingTeamNum",
@@ -4619,6 +4872,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_hOriginalControllerOfCurrentPawn() {
         let prop = (
             "CCSPlayerController.m_hOriginalControllerOfCurrentPawn",
@@ -4672,6 +4926,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_iAccountID() {
         let prop = (
             "m_iAccountID",
@@ -4725,6 +4980,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bInBuyZone() {
         let prop = (
             "CCSPlayerPawn.m_bInBuyZone",
@@ -4778,6 +5034,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn entity_id() {
         let prop = (
             "entity_id",
@@ -4830,6 +5087,7 @@ mod tests {
         assert_eq!(out.0.df[&ENTITY_ID_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iEnemiesFlashed() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iEnemiesFlashed",
@@ -4883,6 +5141,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_fWarmupPeriodEnd() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_fWarmupPeriodEnd",
@@ -4936,6 +5195,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iCompetitiveRankType() {
         let prop = (
             "CCSPlayerController.m_iCompetitiveRankType",
@@ -4989,6 +5249,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nViewModelIndex() {
         let prop = (
             "m_nViewModelIndex",
@@ -5042,6 +5303,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_pReserveAmmo() {
         let prop = (
             "m_pReserveAmmo",
@@ -5095,6 +5357,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iConnected() {
         let prop = (
             "CCSPlayerController.m_iConnected",
@@ -5148,6 +5411,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_iIronSightMode() {
         let prop = (
             "m_iIronSightMode",
@@ -5201,6 +5465,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_ubInterpolationFrame() {
         let prop = (
             "m_ubInterpolationFrame",
@@ -5254,6 +5519,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_hPlayerPawn() {
         let prop = (
             "CCSPlayerController.m_hPlayerPawn",
@@ -5307,6 +5573,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_aimPunchAngle() {
         let prop = (
             "CCSPlayerPawn.m_aimPunchAngle",
@@ -5360,6 +5627,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_ItemServices_m_bHasDefuser() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_ItemServices.m_bHasDefuser",
@@ -5413,12 +5681,14 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_unPlayerTvControlFlags() {
         let prop = ("CCSPlayerController.m_unPlayerTvControlFlags", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flProgressBarStartTime() {
         let prop = (
             "CCSPlayerPawn.m_flProgressBarStartTime",
@@ -5472,6 +5742,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_flGameStartTime() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_flGameStartTime",
@@ -5525,12 +5796,14 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_nDisconnectionTick() {
         let prop = ("CCSPlayerController.m_nDisconnectionTick", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CEconItemAttribute_m_bSetBonus() {
         let prop = (
             "CEconItemAttribute.m_bSetBonus",
@@ -5584,6 +5857,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_fLastShotTime() {
         let prop = (
             "m_fLastShotTime",
@@ -5637,6 +5911,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_vDecalPosition() {
         let prop = (
             "CCSPlayerPawn.m_vDecalPosition",
@@ -5690,12 +5965,14 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CEconItemAttribute_m_iRawValue32() {
         let prop = ("CEconItemAttribute.m_iRawValue32", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nLastConcurrentKilled() {
         let prop = (
             "CCSPlayerPawn.m_nLastConcurrentKilled",
@@ -5749,6 +6026,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn weapon_skin() {
         let prop = (
             "weapon_skin",
@@ -5801,6 +6079,7 @@ mod tests {
         assert_eq!(out.0.df[&WEAPON_SKIN_NAME], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn weapon_skin_id() {
         let prop = (
             "weapon_skin_id",
@@ -5853,6 +6132,7 @@ mod tests {
         assert_eq!(out.0.df[&WEAPON_SKIN_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_flCreateTime() {
         let prop = (
             "m_flCreateTime",
@@ -5906,6 +6186,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_vecZ() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_vecZ",
@@ -5959,6 +6240,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nHierarchyId() {
         let prop = (
             "m_nHierarchyId",
@@ -6012,6 +6294,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_unFreezetimeEndEquipmentValue() {
         let prop = (
             "CCSPlayerPawn.m_unFreezetimeEndEquipmentValue",
@@ -6065,6 +6348,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_fWarmupPeriodStart() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_fWarmupPeriodStart",
@@ -6118,6 +6402,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_vecY() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_vecY",
@@ -6171,12 +6456,14 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_bPawnHasDefuser() {
         let prop = ("CCSPlayerController.m_bPawnHasDefuser", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nLastKillerIndex() {
         let prop = (
             "CCSPlayerPawn.m_nLastKillerIndex",
@@ -6230,6 +6517,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_vecX() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_vecX",
@@ -6283,6 +6571,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_bGameRestart() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_bGameRestart",
@@ -6336,6 +6625,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_fAccuracyPenalty() {
         let prop = (
             "m_fAccuracyPenalty",
@@ -6389,6 +6679,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_BulletServices_m_totalHitsOnServer() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_BulletServices.m_totalHitsOnServer",
@@ -6442,6 +6733,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_iItemIDHigh() {
         let prop = (
             "m_iItemIDHigh",
@@ -6495,6 +6787,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_iState() {
         let prop = (
             "m_iState",
@@ -6548,12 +6841,14 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iPawnArmor() {
         let prop = ("CCSPlayerController.m_iPawnArmor", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InGameMoneyServices_m_iStartAccount() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InGameMoneyServices.m_iStartAccount",
@@ -6607,6 +6902,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_szCrosshairCodes() {
         let prop = (
             "CCSPlayerController.m_szCrosshairCodes",
@@ -6660,6 +6956,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nSubclassID() {
         let prop = (
             "m_nSubclassID",
@@ -6713,6 +7010,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iObjective() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iObjective",
@@ -6766,6 +7064,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nOwnerId() {
         let prop = (
             "m_nOwnerId",
@@ -6819,6 +7118,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_gamePhase() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_gamePhase",
@@ -6872,6 +7172,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_cellX() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_cellX",
@@ -6925,6 +7226,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_hOuter() {
         let prop = (
             "m_hOuter",
@@ -6978,12 +7280,14 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_bCanControlObservedBot() {
         let prop = ("CCSPlayerController.m_bCanControlObservedBot", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn is_alive() {
         let prop = (
             "is_alive",
@@ -7036,6 +7340,7 @@ mod tests {
         assert_eq!(out.0.df[&IS_ALIVE_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_hOwnerEntity() {
         let prop = (
             "m_hOwnerEntity",
@@ -7089,6 +7394,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_bBurstMode() {
         let prop = (
             "m_bBurstMode",
@@ -7142,12 +7448,14 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iPawnHealth() {
         let prop = ("CCSPlayerController.m_iPawnHealth", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_vRagdollDamageForce() {
         let prop = (
             "CCSPlayerPawn.m_vRagdollDamageForce",
@@ -7201,6 +7509,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_aimPunchAngleVel() {
         let prop = (
             "CCSPlayerPawn.m_aimPunchAngleVel",
@@ -7254,6 +7563,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iEquipmentValue() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iEquipmentValue",
@@ -7307,6 +7617,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iDeaths() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iDeaths",
@@ -7360,6 +7671,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_MoveType() {
         let prop = (
             "CCSPlayerPawn.m_MoveType",
@@ -7413,6 +7725,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bIsWalking() {
         let prop = (
             "CCSPlayerPawn.m_bIsWalking",
@@ -7466,6 +7779,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn active_weapon_original_owner() {
         let prop = (
             "active_weapon_original_owner",
@@ -7518,6 +7832,7 @@ mod tests {
         assert_eq!(out.0.df[&WEAPON_ORIGINGAL_OWNER_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InGameMoneyServices_m_iCashSpentThisRound() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InGameMoneyServices.m_iCashSpentThisRound",
@@ -7571,6 +7886,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_nResetEventsParity() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_nResetEventsParity",
@@ -7624,6 +7940,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CEconItemAttribute_m_flInitialValue() {
         let prop = (
             "CEconItemAttribute.m_flInitialValue",
@@ -7677,6 +7994,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn name() {
         let prop = (
             "name",
@@ -7729,6 +8047,7 @@ mod tests {
         assert_eq!(out.0.df[&NAME_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flFlashMaxAlpha() {
         let prop = (
             "CCSPlayerPawn.m_flFlashMaxAlpha",
@@ -7782,6 +8101,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nInteractsAs() {
         let prop = (
             "CCSPlayerPawn.m_nInteractsAs",
@@ -7835,12 +8155,14 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_nTickBase() {
         let prop = ("CCSPlayerController.m_nTickBase", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InGameMoneyServices_m_iAccount() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InGameMoneyServices.m_iAccount",
@@ -7894,6 +8216,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iCompetitiveRanking() {
         let prop = (
             "CCSPlayerController.m_iCompetitiveRanking",
@@ -7947,6 +8270,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_unRoundStartEquipmentValue() {
         let prop = (
             "CCSPlayerPawn.m_unRoundStartEquipmentValue",
@@ -8000,6 +8324,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_fRoundStartTime() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_fRoundStartTime",
@@ -8053,6 +8378,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_bTeamIntroPeriod() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_bTeamIntroPeriod",
@@ -8106,6 +8432,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_vDecalForwardAxis() {
         let prop = (
             "m_vDecalForwardAxis",
@@ -8159,6 +8486,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_OriginalOwnerXuidLow() {
         let prop = (
             "m_OriginalOwnerXuidLow",
@@ -8212,6 +8540,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bKilledByHeadshot() {
         let prop = (
             "CCSPlayerPawn.m_bKilledByHeadshot",
@@ -8265,6 +8594,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InventoryServices_m_unMusicID() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InventoryServices.m_unMusicID",
@@ -8318,6 +8648,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn yaw() {
         let prop = (
             "yaw",
@@ -8370,6 +8701,7 @@ mod tests {
         assert_eq!(out.0.df[&YAW_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iCompetitiveWins() {
         let prop = (
             "CCSPlayerController.m_iCompetitiveWins",
@@ -8423,6 +8755,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nNextSecondaryAttackTick() {
         let prop = (
             "m_nNextSecondaryAttackTick",
@@ -8476,6 +8809,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_flStamina() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_flStamina",
@@ -8529,6 +8863,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InventoryServices_m_nPersonaDataPublicCommendsLeader() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InventoryServices.m_nPersonaDataPublicCommendsLeader",
@@ -8582,6 +8917,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_nIdealMotionType() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_nIdealMotionType",
@@ -8635,6 +8971,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_flDuckSpeed() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_flDuckSpeed",
@@ -8688,6 +9025,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nEnablePhysics() {
         let prop = (
             "CCSPlayerPawn.m_nEnablePhysics",
@@ -8741,6 +9079,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_vDecalForwardAxis() {
         let prop = (
             "CCSPlayerPawn.m_vDecalForwardAxis",
@@ -8794,6 +9133,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_bHasMatchStarted() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_bHasMatchStarted",
@@ -8847,6 +9187,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iAssists() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iAssists",
@@ -8900,6 +9241,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flVelocityModifier() {
         let prop = (
             "CCSPlayerPawn.m_flVelocityModifier",
@@ -8953,6 +9295,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_flFireSequenceStartTime() {
         let prop = (
             "m_flFireSequenceStartTime",
@@ -9006,6 +9349,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_aimPunchTickBase() {
         let prop = (
             "CCSPlayerPawn.m_aimPunchTickBase",
@@ -9059,6 +9403,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flSlopeDropOffset() {
         let prop = (
             "CCSPlayerPawn.m_flSlopeDropOffset",
@@ -9112,6 +9457,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_vHeadConstraintOffset() {
         let prop = (
             "CCSPlayerPawn.m_vHeadConstraintOffset",
@@ -9165,6 +9511,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iDamage() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iDamage",
@@ -9218,6 +9565,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_nLadderSurfacePropIndex() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_nLadderSurfacePropIndex",
@@ -9271,6 +9619,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nEntityId() {
         let prop = (
             "CCSPlayerPawn.m_nEntityId",
@@ -9324,6 +9673,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_iClip1() {
         let prop = (
             "m_iClip1",
@@ -9377,6 +9727,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_bBombDropped() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_bBombDropped",
@@ -9430,6 +9781,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_hSequence() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_hSequence",
@@ -9483,6 +9835,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_ItemServices_m_bHasHelmet() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_ItemServices.m_bHasHelmet",
@@ -9536,6 +9889,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_flNextSecondaryAttackTickRatio() {
         let prop = (
             "m_flNextSecondaryAttackTickRatio",
@@ -9589,6 +9943,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flCreateTime() {
         let prop = (
             "CCSPlayerPawn.m_flCreateTime",
@@ -9642,6 +9997,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_angRotation() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_angRotation",
@@ -9695,6 +10051,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nWhichBombZone() {
         let prop = (
             "CCSPlayerPawn.m_nWhichBombZone",
@@ -9748,6 +10105,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_szRagdollDamageWeaponName() {
         let prop = (
             "CCSPlayerPawn.m_szRagdollDamageWeaponName",
@@ -9801,6 +10159,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iScore() {
         let prop = (
             "CCSPlayerController.m_iScore",
@@ -9854,6 +10213,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bClientSideRagdoll() {
         let prop = (
             "CCSPlayerPawn.m_bClientSideRagdoll",
@@ -9907,6 +10267,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_unCurrentEquipmentValue() {
         let prop = (
             "CCSPlayerPawn.m_unCurrentEquipmentValue",
@@ -9960,6 +10321,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nInteractsExclude() {
         let prop = (
             "CCSPlayerPawn.m_nInteractsExclude",
@@ -10013,6 +10375,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_iItemIDLow() {
         let prop = (
             "m_iItemIDLow",
@@ -10066,6 +10429,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_fFlags() {
         let prop = (
             "CCSPlayerController.m_fFlags",
@@ -10119,6 +10483,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iMoneySaved() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iMoneySaved",
@@ -10128,6 +10493,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InventoryServices_m_nPersonaDataPublicCommendsTeacher() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InventoryServices.m_nPersonaDataPublicCommendsTeacher",
@@ -10181,6 +10547,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InGameMoneyServices_m_iTotalCashSpent() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InGameMoneyServices.m_iTotalCashSpent",
@@ -10234,6 +10601,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_flDuckAmount() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_flDuckAmount",
@@ -10287,6 +10655,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_InventoryServices_m_nPersonaDataPublicCommendsFriendly() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_InventoryServices.m_nPersonaDataPublicCommendsFriendly",
@@ -10340,6 +10709,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_flDroppedAtTime() {
         let prop = (
             "m_flDroppedAtTime",
@@ -10393,6 +10763,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_iNumConsecutiveCTLoses() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_iNumConsecutiveCTLoses",
@@ -10446,6 +10817,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_MoveType() {
         let prop = (
             "m_MoveType",
@@ -10499,6 +10871,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iKillReward() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iKillReward",
@@ -10508,6 +10881,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iHeadShotKills() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iHeadShotKills",
@@ -10561,6 +10935,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_flTimeSilencerSwitchComplete() {
         let prop = (
             "m_flTimeSilencerSwitchComplete",
@@ -10614,6 +10989,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iLiveTime() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iLiveTime",
@@ -10667,6 +11043,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iAssists() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iAssists",
@@ -10720,6 +11097,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nCollisionFunctionMask() {
         let prop = (
             "m_nCollisionFunctionMask",
@@ -10773,6 +11151,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_qDeathEyeAngles() {
         let prop = (
             "CCSPlayerPawn.m_qDeathEyeAngles",
@@ -10826,6 +11205,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nInteractsAs() {
         let prop = (
             "m_nInteractsAs",
@@ -10879,6 +11259,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_iEntityQuality() {
         let prop = (
             "m_iEntityQuality",
@@ -10932,6 +11313,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_flJumpVel() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_flJumpVel",
@@ -10985,6 +11367,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bHasMovedSinceSpawn() {
         let prop = (
             "CCSPlayerPawn.m_bHasMovedSinceSpawn",
@@ -11038,6 +11421,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_iMatchStats_PlayersAlive_T() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_iMatchStats_PlayersAlive_T",
@@ -11091,6 +11475,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_vRagdollServerOrigin() {
         let prop = (
             "CCSPlayerPawn.m_vRagdollServerOrigin",
@@ -11144,6 +11529,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_cellZ() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_cellZ",
@@ -11197,6 +11583,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bIsDefusing() {
         let prop = (
             "CCSPlayerPawn.m_bIsDefusing",
@@ -11250,6 +11637,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iCompetitiveRankingPredicted_Loss() {
         let prop = (
             "CCSPlayerController.m_iCompetitiveRankingPredicted_Loss",
@@ -11303,6 +11691,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_szLastPlaceName() {
         let prop = (
             "CCSPlayerPawn.m_szLastPlaceName",
@@ -11356,6 +11745,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_nAnimLoopMode() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_nAnimLoopMode",
@@ -11409,6 +11799,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flFlashDuration() {
         let prop = (
             "CCSPlayerPawn.m_flFlashDuration",
@@ -11462,6 +11853,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iKills() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iKills",
@@ -11515,6 +11907,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iCompTeammateColor() {
         let prop = (
             "CCSPlayerController.m_iCompTeammateColor",
@@ -11568,6 +11961,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_MeshGroupMask() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_MeshGroupMask",
@@ -11621,6 +12015,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_weaponMode() {
         let prop = (
             "m_weaponMode",
@@ -11674,6 +12069,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_flRecoilIndex() {
         let prop = (
             "m_flRecoilIndex",
@@ -11727,6 +12123,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_flRestartRoundTime() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_flRestartRoundTime",
@@ -11780,6 +12177,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn velocity_Z() {
         let prop = (
             "velocity_Z",
@@ -11832,6 +12230,7 @@ mod tests {
         assert_eq!(out.0.df[&VELOCITY_Z_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_vDecalPosition() {
         let prop = (
             "m_vDecalPosition",
@@ -11885,6 +12284,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn steamid() {
         let prop = (
             "steamid",
@@ -11937,6 +12337,7 @@ mod tests {
         assert_eq!(out.0.df[&STEAMID_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn X() {
         let prop = (
             "X",
@@ -11989,6 +12390,7 @@ mod tests {
         assert_eq!(out.0.df[&PLAYER_X_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iPing() {
         let prop = (
             "CCSPlayerController.m_iPing",
@@ -12042,6 +12444,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bIsBuyMenuOpen() {
         let prop = (
             "CCSPlayerPawn.m_bIsBuyMenuOpen",
@@ -12095,6 +12498,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_hPawn() {
         let prop = (
             "CCSPlayerController.m_hPawn",
@@ -12148,6 +12552,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_fFlags() {
         let prop = (
             "CCSPlayerPawn.m_fFlags",
@@ -12201,6 +12606,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_bDuckOverride() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_bDuckOverride",
@@ -12254,6 +12660,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_steamID() {
         let prop = (
             "CCSPlayerController.m_steamID",
@@ -12307,6 +12714,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_iPlayerState() {
         let prop = (
             "CCSPlayerPawn.m_iPlayerState",
@@ -12360,6 +12768,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_OriginalOwnerXuidHigh() {
         let prop = (
             "m_OriginalOwnerXuidHigh",
@@ -12413,6 +12822,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bIsScoped() {
         let prop = (
             "CCSPlayerPawn.m_bIsScoped",
@@ -12466,6 +12876,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_flCreateTime() {
         let prop = (
             "CCSPlayerController.m_flCreateTime",
@@ -12519,6 +12930,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_totalRoundsPlayed() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_totalRoundsPlayed",
@@ -12572,6 +12984,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bResumeZoom() {
         let prop = (
             "CCSPlayerPawn.m_bResumeZoom",
@@ -12625,6 +13038,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_bBombPlanted() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_bBombPlanted",
@@ -12678,6 +13092,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iHeadShotKills() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iHeadShotKills",
@@ -12731,6 +13146,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nAddDecal() {
         let prop = (
             "m_nAddDecal",
@@ -12784,6 +13200,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_bPawnIsAlive() {
         let prop = (
             "CCSPlayerController.m_bPawnIsAlive",
@@ -12837,6 +13254,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_iRoundTime() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_iRoundTime",
@@ -12890,6 +13308,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iCashEarned() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iCashEarned",
@@ -12943,6 +13362,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_iMoveState() {
         let prop = (
             "CCSPlayerPawn.m_iMoveState",
@@ -12996,6 +13416,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_aimPunchTickFraction() {
         let prop = (
             "CCSPlayerPawn.m_aimPunchTickFraction",
@@ -13049,6 +13470,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_bOldJumpPressed() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_bOldJumpPressed",
@@ -13102,6 +13524,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_iInventoryPosition() {
         let prop = (
             "m_iInventoryPosition",
@@ -13155,6 +13578,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iszPlayerName() {
         let prop = (
             "CCSPlayerController.m_iszPlayerName",
@@ -13208,6 +13632,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_flSimulationTime() {
         let prop = (
             "m_flSimulationTime",
@@ -13261,6 +13686,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nDropTick() {
         let prop = (
             "m_nDropTick",
@@ -13314,6 +13740,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_nNewSequenceParity() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_nNewSequenceParity",
@@ -13367,6 +13794,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nRagdollDamageBone() {
         let prop = (
             "CCSPlayerPawn.m_nRagdollDamageBone",
@@ -13420,6 +13848,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nHierarchyId() {
         let prop = (
             "CCSPlayerPawn.m_nHierarchyId",
@@ -13473,6 +13902,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iPawnLifetimeStart() {
         let prop = (
             "CCSPlayerController.m_iPawnLifetimeStart",
@@ -13526,6 +13956,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iTeamNum() {
         let prop = (
             "CCSPlayerController.m_iTeamNum",
@@ -13579,6 +14010,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flSlopeDropHeight() {
         let prop = (
             "CCSPlayerPawn.m_flSlopeDropHeight",
@@ -13632,6 +14064,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CBodyComponentBaseAnimGraph_m_flLastTeleportTime() {
         let prop = (
             "CCSPlayerPawn.CBodyComponentBaseAnimGraph.m_flLastTeleportTime",
@@ -13685,6 +14118,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iDamage() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iDamage",
@@ -13738,6 +14172,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn user_id() {
         let prop = (
             "user_id",
@@ -13790,6 +14225,7 @@ mod tests {
         assert_eq!(out.0.df[&USERID_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iMoneySaved() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iMoneySaved",
@@ -13843,6 +14279,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn Z() {
         let prop = (
             "Z",
@@ -13895,6 +14332,7 @@ mod tests {
         assert_eq!(out.0.df[&PLAYER_Z_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CBodyComponentBaseAnimGraph_m_hParent() {
         let prop = (
             "CBodyComponentBaseAnimGraph.m_hParent",
@@ -13948,6 +14386,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iEquipmentValue() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iEquipmentValue",
@@ -13957,6 +14396,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iLiveTime() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iLiveTime",
@@ -14010,12 +14450,14 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_unActiveQuestId() {
         let prop = ("CCSPlayerController.m_unActiveQuestId", PropColumn { data: None, num_nones: 40 });
         let prop_id = out.1.name_to_id[prop.0];
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn weapon_name() {
         let prop = (
             "weapon_name",
@@ -14068,6 +14510,7 @@ mod tests {
         assert_eq!(out.0.df[&WEAPON_NAME_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nForceBone() {
         let prop = (
             "CCSPlayerPawn.m_nForceBone",
@@ -14121,6 +14564,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_iRoundWinStatus() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_iRoundWinStatus",
@@ -14174,6 +14618,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iKillReward() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iKillReward",
@@ -14227,6 +14672,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iObjective() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iObjective",
@@ -14280,6 +14726,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn velocity_X() {
         let prop = (
             "velocity_X",
@@ -14332,6 +14779,7 @@ mod tests {
         assert_eq!(out.0.df[&VELOCITY_X_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_CSPerRoundStats_t_m_iUtilityDamage() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.CSPerRoundStats_t.m_iUtilityDamage",
@@ -14385,6 +14833,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_nCollisionFunctionMask() {
         let prop = (
             "CCSPlayerPawn.m_nCollisionFunctionMask",
@@ -14438,6 +14887,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_iTeamNum() {
         let prop = (
             "CCSPlayerPawn.m_iTeamNum",
@@ -14491,6 +14941,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_arrForceSubtickMoveWhen() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_arrForceSubtickMoveWhen",
@@ -14544,6 +14995,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_nNextPrimaryAttackTick() {
         let prop = (
             "m_nNextPrimaryAttackTick",
@@ -14597,6 +15049,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_iPawnLifetimeEnd() {
         let prop = (
             "CCSPlayerController.m_iPawnLifetimeEnd",
@@ -14650,6 +15103,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSGameRulesProxy_CCSGameRules_m_eRoundWinReason() {
         let prop = (
             "CCSGameRulesProxy.CCSGameRules.m_eRoundWinReason",
@@ -14703,6 +15157,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_ubInterpolationFrame() {
         let prop = (
             "CCSPlayerPawn.m_ubInterpolationFrame",
@@ -14756,6 +15211,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iNumRoundKills() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iNumRoundKills",
@@ -14809,6 +15265,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn tick() {
         let prop = (
             "tick",
@@ -14861,6 +15318,7 @@ mod tests {
         assert_eq!(out.0.df[&TICK_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_flOffsetTickStashedSpeed() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_flOffsetTickStashedSpeed",
@@ -14914,6 +15372,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_m_nPawnCharacterDefIndex() {
         let prop = (
             "CCSPlayerController.m_nPawnCharacterDefIndex",
@@ -14967,6 +15426,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_flTimeOfLastInjury() {
         let prop = (
             "CCSPlayerPawn.m_flTimeOfLastInjury",
@@ -15020,6 +15480,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iEnemiesFlashed() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iEnemiesFlashed",
@@ -15073,6 +15534,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CEconItemAttribute_m_iAttributeDefinitionIndex() {
         let prop = (
             "CEconItemAttribute.m_iAttributeDefinitionIndex",
@@ -15126,6 +15588,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_flJumpUntil() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_flJumpUntil",
@@ -15179,6 +15642,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn velocity_Y() {
         let prop = (
             "velocity_Y",
@@ -15231,6 +15695,7 @@ mod tests {
         assert_eq!(out.0.df[&VELOCITY_Y_ID], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_m_bClientRagdoll() {
         let prop = (
             "CCSPlayerPawn.m_bClientRagdoll",
@@ -15284,6 +15749,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerController_CCSPlayerController_ActionTrackingServices_m_iEnemy3Ks() {
         let prop = (
             "CCSPlayerController.CCSPlayerController_ActionTrackingServices.m_iEnemy3Ks",
@@ -15337,6 +15803,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn m_hPrevOwner() {
         let prop = (
             "m_hPrevOwner",
@@ -15390,6 +15857,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn CCSPlayerPawn_CCSPlayer_MovementServices_m_flOffsetTickCompleteTime() {
         let prop = (
             "CCSPlayerPawn.CCSPlayer_MovementServices.m_flOffsetTickCompleteTime",
@@ -15443,6 +15911,7 @@ mod tests {
         assert_eq!(out.0.df[&prop_id], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_hltv_versioninfo() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -15465,6 +15934,7 @@ mod tests {
         assert_eq!(out.2["hltv_versioninfo"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_round_freeze_end() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -15491,6 +15961,7 @@ mod tests {
         assert_eq!(out.2["round_freeze_end"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_weapon_reload() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -15537,6 +16008,7 @@ mod tests {
         assert_eq!(out.2["weapon_reload"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_cs_pre_restart() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -15563,6 +16035,7 @@ mod tests {
         assert_eq!(out.2["cs_pre_restart"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_weapon_fire() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -15625,6 +16098,7 @@ mod tests {
         assert_eq!(out.2["weapon_fire"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_player_death() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -15847,6 +16321,7 @@ mod tests {
         assert_eq!(out.2["player_death"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_smokegrenade_expired() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -15925,6 +16400,7 @@ mod tests {
         assert_eq!(out.2["smokegrenade_expired"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_item_equip() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16035,6 +16511,7 @@ mod tests {
         assert_eq!(out.2["item_equip"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_bomb_planted() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16089,6 +16566,7 @@ mod tests {
         assert_eq!(out.2["bomb_planted"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_bomb_exploded() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16143,6 +16621,7 @@ mod tests {
         assert_eq!(out.2["bomb_exploded"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_round_prestart() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16169,6 +16648,7 @@ mod tests {
         assert_eq!(out.2["round_prestart"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_cs_round_final_beep() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16195,6 +16675,7 @@ mod tests {
         assert_eq!(out.2["cs_round_final_beep"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_smokegrenade_detonate() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16273,6 +16754,7 @@ mod tests {
         assert_eq!(out.2["smokegrenade_detonate"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_player_footstep() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16319,6 +16801,7 @@ mod tests {
         assert_eq!(out.2["player_footstep"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_buytime_ended() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16345,6 +16828,7 @@ mod tests {
         assert_eq!(out.2["buytime_ended"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_player_jump() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16391,6 +16875,7 @@ mod tests {
         assert_eq!(out.2["player_jump"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_weapon_zoom() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16437,6 +16922,7 @@ mod tests {
         assert_eq!(out.2["weapon_zoom"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_round_poststart() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16463,6 +16949,7 @@ mod tests {
         assert_eq!(out.2["round_poststart"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_bomb_pickup() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16509,6 +16996,7 @@ mod tests {
         assert_eq!(out.2["bomb_pickup"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_player_blind() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16587,6 +17075,7 @@ mod tests {
         assert_eq!(out.2["player_blind"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_bomb_begindefuse() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16617,6 +17106,7 @@ mod tests {
         assert_eq!(out.2["bomb_begindefuse"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_inferno_startburn() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16695,6 +17185,7 @@ mod tests {
         assert_eq!(out.2["inferno_startburn"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_player_disconnect() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16781,6 +17272,7 @@ mod tests {
         assert_eq!(out.2["player_disconnect"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_player_hurt() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16891,6 +17383,7 @@ mod tests {
         assert_eq!(out.2["player_hurt"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_bomb_beginplant() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16945,6 +17438,7 @@ mod tests {
         assert_eq!(out.2["bomb_beginplant"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_round_officially_ended() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -16971,6 +17465,7 @@ mod tests {
         assert_eq!(out.2["round_officially_ended"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_item_pickup() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17041,6 +17536,7 @@ mod tests {
         assert_eq!(out.2["item_pickup"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_player_spawn() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17087,6 +17583,7 @@ mod tests {
         assert_eq!(out.2["player_spawn"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_other_death() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17221,6 +17718,7 @@ mod tests {
         assert_eq!(out.2["other_death"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_bomb_defused() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17251,6 +17749,7 @@ mod tests {
         assert_eq!(out.2["bomb_defused"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_begin_new_match() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17267,6 +17766,7 @@ mod tests {
         assert_eq!(out.2["begin_new_match"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_cs_win_panel_round() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17369,6 +17869,7 @@ mod tests {
         assert_eq!(out.2["cs_win_panel_round"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_cs_win_panel_match() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17385,6 +17886,7 @@ mod tests {
         assert_eq!(out.2["cs_win_panel_match"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_cs_round_start_beep() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17411,6 +17913,7 @@ mod tests {
         assert_eq!(out.2["cs_round_start_beep"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_bomb_dropped() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17465,6 +17968,7 @@ mod tests {
         assert_eq!(out.2["bomb_dropped"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_inferno_expire() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17543,6 +18047,7 @@ mod tests {
         assert_eq!(out.2["inferno_expire"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_round_end() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17621,6 +18126,7 @@ mod tests {
         assert_eq!(out.2["round_end"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_round_start() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17675,6 +18181,7 @@ mod tests {
         assert_eq!(out.2["round_start"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_round_time_warning() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17691,6 +18198,7 @@ mod tests {
         assert_eq!(out.2["round_time_warning"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_item_purchase() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17818,6 +18326,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_flashbang_detonate() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17896,6 +18405,7 @@ mod tests {
         assert_eq!(out.2["flashbang_detonate"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_round_mvp() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17982,6 +18492,7 @@ mod tests {
         assert_eq!(out.2["round_mvp"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_round_announce_match_start() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
@@ -17998,6 +18509,7 @@ mod tests {
         assert_eq!(out.2["round_announce_match_start"], prop.1);
     }
     #[test]
+    #[ignore = "requires the original upstream demo; set DEMOPARSER_TEST_DEMO and run with --ignored"]
     fn game_event_hegrenade_detonate() {
         use crate::second_pass::variants::Variant::*;
         let prop = (
