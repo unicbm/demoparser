@@ -71,6 +71,20 @@ const ECON_ATTR_SET_ITEM_TEXTURE_PREFAB: u32 = 6;
 const ECON_ATTR_SET_ITEM_TEXTURE_SEED: u32 = 7;
 const ECON_ATTR_SET_ITEM_TEXTURE_WEAR: u32 = 8;
 
+// Econ attributes are a sparse, ordered list, not fixed paint/seed/wear slots.
+// Unpainted items may start with sticker IDs and their placement coordinates.
+fn weapon_paint_attribute(entity: Option<&Entity>, definition_index: u32) -> Option<&Variant> {
+    let props = &entity?.props;
+    let usual_slot = definition_index.checked_sub(ECON_ATTR_SET_ITEM_TEXTURE_PREFAB)?;
+    if props.get(&(WEAPON_ATTRIBUTE_DEF_INDEX_ID + usual_slot)) == Some(&Variant::U32(definition_index)) {
+        return props.get(&(WEAPON_SKIN_ID + usual_slot));
+    }
+    (0..64).find_map(|slot| {
+        (props.get(&(WEAPON_ATTRIBUTE_DEF_INDEX_ID + slot)) == Some(&Variant::U32(definition_index)))
+            .then(|| props.get(&(WEAPON_SKIN_ID + slot))).flatten()
+    })
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct ProjectileRecord {
     pub steamid: Option<u64>,
@@ -345,7 +359,7 @@ impl<'a> RowCollectionContext<'a> {
     }
 
     fn weapon_skin_id(&self) -> Option<u32> {
-        match self.weapon?.props.get(&WEAPON_SKIN_ID)? {
+        match weapon_paint_attribute(self.weapon, ECON_ATTR_SET_ITEM_TEXTURE_PREFAB)? {
             Variant::F32(value) if value.fract() == 0.0 && *value >= 0.0 => Some(*value as u32),
             _ => None,
         }
@@ -600,11 +614,9 @@ impl<'a> SecondPassParser<'a> {
                     WEAPON_SKIN_NAME => row.weapon_skin_id()
                         .and_then(|id| PAINTKITS.get(&id))
                         .map(|name| Variant::String((*name).to_string())),
-                    WEAPON_FLOAT => RowCollectionContext::property(row.metadata_weapon, WEAPON_FLOAT),
-                    WEAPON_PAINT_SEED => Some(Variant::U32(match RowCollectionContext::property(row.metadata_weapon, WEAPON_PAINT_SEED) {
-                        Some(Variant::F32(value)) => value as u32,
-                        _ => 0,
-                    })),
+                    WEAPON_FLOAT => weapon_paint_attribute(row.metadata_weapon, ECON_ATTR_SET_ITEM_TEXTURE_WEAR).cloned(),
+                    WEAPON_PAINT_SEED => weapon_paint_attribute(row.metadata_weapon, ECON_ATTR_SET_ITEM_TEXTURE_SEED)
+                        .cloned().and_then(glove_paint_seed_from_attribute).map(Variant::U32),
                     WEAPON_ORIGINGAL_OWNER_ID => {
                         let low = RowCollectionContext::u32_property(row.weapon, ids.orig_own_low)?;
                         let high = RowCollectionContext::u32_property(row.weapon, ids.orig_own_high)?;
@@ -1244,7 +1256,8 @@ impl<'a> SecondPassParser<'a> {
     }
     pub fn find_skin_float(&self, player: &PlayerMetaData) -> Result<Variant, PropCollectionError> {
         if let Some(player_entity_id) = &player.player_entity_id {
-            return self.find_weapon_prop(&WEAPON_FLOAT, &player_entity_id);
+            let weapon_entity_id = self.find_weapon_entid(player_entity_id)?;
+            return self.find_weapon_paint_attribute(&weapon_entity_id, ECON_ATTR_SET_ITEM_TEXTURE_WEAR);
         }
         Err(PropCollectionError::PlayerNotFound)
     }
@@ -1307,11 +1320,12 @@ impl<'a> SecondPassParser<'a> {
     }
     pub fn find_skin_paint_seed(&self, player: &PlayerMetaData) -> Result<Variant, PropCollectionError> {
         if let Some(player_entity_id) = &player.player_entity_id {
-            if let Ok(Variant::F32(f)) = self.find_weapon_prop(&WEAPON_PAINT_SEED, &player_entity_id) {
-                return Ok(Variant::U32(f as u32));
-            }
+            let weapon_entity_id = self.find_weapon_entid(player_entity_id)?;
+            return self.find_weapon_paint_attribute(&weapon_entity_id, ECON_ATTR_SET_ITEM_TEXTURE_SEED)
+                .ok().and_then(glove_paint_seed_from_attribute).map(Variant::U32)
+                .ok_or(PropCollectionError::GetPropFromEntPropNotFound);
         }
-        return Ok(Variant::U32(0));
+        Err(PropCollectionError::PlayerNotFound)
     }
     pub fn find_agent_skin(&self, player: &PlayerMetaData) -> Result<Variant, PropCollectionError> {
         self.find_agent_skin_name(player).map(|name| Variant::String(name.to_owned()))
@@ -1748,12 +1762,12 @@ impl<'a> SecondPassParser<'a> {
             Ok(Variant::U32(value)) => value,
             _ => 0,
         };
-        let paint_seed = match self.get_prop_from_ent(&WEAPON_PAINT_SEED, weapon_entity_id) {
+        let paint_seed = match self.find_weapon_paint_attribute(weapon_entity_id, ECON_ATTR_SET_ITEM_TEXTURE_SEED) {
             Ok(Variant::F32(value)) if value.is_finite() && value >= 0.0 => value as u32,
             Ok(Variant::U32(value)) => value,
             _ => 0,
         };
-        let paint_wear = match self.get_prop_from_ent(&WEAPON_FLOAT, weapon_entity_id) {
+        let paint_wear = match self.find_weapon_paint_attribute(weapon_entity_id, ECON_ATTR_SET_ITEM_TEXTURE_WEAR) {
             Ok(Variant::F32(value)) => value,
             _ => -1.0,
         };
@@ -2033,7 +2047,7 @@ impl<'a> SecondPassParser<'a> {
     }
 
     pub fn find_weapon_skin(&self, weapon_entity_id: &i32) -> Result<Variant, PropCollectionError> {
-        match self.get_prop_from_ent(&WEAPON_SKIN_ID, weapon_entity_id) {
+        match self.find_weapon_paint_attribute(weapon_entity_id, ECON_ATTR_SET_ITEM_TEXTURE_PREFAB) {
             Ok(Variant::F32(f)) => {
                 // The value is stored as a float for some reason
                 if f.fract() == 0.0 && f >= 0.0 {
@@ -2065,7 +2079,7 @@ impl<'a> SecondPassParser<'a> {
         };
     }
     pub fn find_weapon_skin_id(&self, weapon_entity_id: &i32) -> Result<Variant, PropCollectionError> {
-        match self.get_prop_from_ent(&WEAPON_SKIN_ID, weapon_entity_id) {
+        match self.find_weapon_paint_attribute(weapon_entity_id, ECON_ATTR_SET_ITEM_TEXTURE_PREFAB) {
             Ok(Variant::F32(f)) => {
                 // The value is stored as a float for some reason
                 if f.fract() == 0.0 && f >= 0.0 {
@@ -2142,6 +2156,11 @@ impl<'a> SecondPassParser<'a> {
         }
     }
 
+    fn find_weapon_paint_attribute(&self, weapon_entity_id: &i32, definition_index: u32) -> Result<Variant, PropCollectionError> {
+        weapon_paint_attribute(self.entities.get(*weapon_entity_id as usize).and_then(Option::as_ref), definition_index)
+            .cloned().ok_or(PropCollectionError::GetPropFromEntPropNotFound)
+    }
+
     fn find_glove_attribute_value(
         &self,
         player_entid: &i32,
@@ -2202,6 +2221,15 @@ impl<'a> SecondPassParser<'a> {
             .borrow_mut()
             .insert(*player_entid, (signature, values));
         result.ok_or(PropCollectionError::GetPropFromEntPropNotFound)
+    }
+
+    fn find_weapon_entid(&self, player_entid: &i32) -> Result<i32, PropCollectionError> {
+        let prop = self.prop_controller.special_ids.active_weapon
+            .ok_or(PropCollectionError::SpecialidsActiveWeaponNotSet)?;
+        match self.get_prop_from_ent(&prop, player_entid)? {
+            Variant::U32(handle) => Ok(demo_network_ehandle_index(handle)),
+            _ => Err(PropCollectionError::WeaponHandleIncorrectVariant),
+        }
     }
 
     pub fn find_weapon_prop(&self, prop: &u32, player_entid: &i32) -> Result<Variant, PropCollectionError> {
@@ -2435,6 +2463,35 @@ fn current_inventory_snapshot(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn weapon_paint_attributes_follow_definitions_not_sticker_slots() {
+        use super::*;
+        let mut entity = Entity {
+            cls_id: 0, entity_id: 41, serial: 1,
+            entity_type: EntityType::Normal, cosmetic_revision: 0, usercmd_scalar_cache: None,
+            props: Default::default(),
+        };
+        for (slot, (definition, value)) in [
+            (113, f32::from_bits(8065)), (278, -0.30011988), (279, -0.083866596),
+        ].into_iter().enumerate() {
+            entity.props.insert(WEAPON_ATTRIBUTE_DEF_INDEX_ID + slot as u32, Variant::U32(definition));
+            entity.props.insert(WEAPON_SKIN_ID + slot as u32, Variant::F32(value));
+        }
+        for definition in [6, 7, 8] {
+            assert_eq!(weapon_paint_attribute(Some(&entity), definition), None);
+        }
+        // Paint fields may follow arbitrary attachment fields, in any order.
+        for (slot, (definition, value)) in [(8, 0.25), (6, 282.0), (7, 650.5)].into_iter().enumerate() {
+            entity.props.insert(WEAPON_ATTRIBUTE_DEF_INDEX_ID + 3 + slot as u32, Variant::U32(definition));
+            entity.props.insert(WEAPON_SKIN_ID + 3 + slot as u32, Variant::F32(value));
+        }
+        assert_eq!(weapon_paint_attribute(Some(&entity), 6), Some(&Variant::F32(282.0)));
+        assert_eq!(weapon_paint_attribute(Some(&entity), 7), Some(&Variant::F32(650.5)));
+        assert_eq!(weapon_paint_attribute(Some(&entity), 8), Some(&Variant::F32(0.25)));
+        entity.props.remove(&(WEAPON_ATTRIBUTE_DEF_INDEX_ID + 3));
+        assert_eq!(weapon_paint_attribute(Some(&entity), 8), None);
+    }
+
     use super::{
         current_inventory_snapshot, inventory_cosmetics_are_reusable,
         glove_paint_seed_from_attribute, is_map_based_default_agent,
@@ -2717,6 +2774,9 @@ mod tests {
                     (142, Variant::I32(entity_id)),
                     (143, Variant::String(format!("entity {entity_id}"))),
                     (WEAPON_SKIN_ID, Variant::F32(44.0)),
+                    (WEAPON_ATTRIBUTE_DEF_INDEX_ID, Variant::U32(6)),
+                    (WEAPON_ATTRIBUTE_DEF_INDEX_ID + 1, Variant::U32(7)),
+                    (WEAPON_ATTRIBUTE_DEF_INDEX_ID + 2, Variant::U32(8)),
                     (WEAPON_FLOAT, Variant::F32(entity_id as f32 / 100.0)),
                     (WEAPON_PAINT_SEED, Variant::F32(entity_id as f32 + 0.5)),
                     (WEAPON_RESERVE_AMMO_BASE + 1, Variant::U32(5)),
