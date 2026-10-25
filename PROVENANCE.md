@@ -19,6 +19,10 @@ projection and cosmetic fixes already present at import. Extraction adds a root
 workspace and lockfile, independent build checks, and an explicit fixture-test
 lane. It preserves the crate names and parser API used by the converter.
 
+Legacy game-event string recovery is backported from khojametov's
+[upstream PR #364](https://github.com/LaihoE/demoparser/pull/364), commit
+`f22b2e069d2f66909d927ec393568038ba9ef005`, including its five regression tests.
+
 Protocol/map regeneration utilities remain maintenance tools. Normal builds use
 the committed generated files; regeneration requires the matching external Valve
 data and a separate source review. Do not run those utilities as a normal build
