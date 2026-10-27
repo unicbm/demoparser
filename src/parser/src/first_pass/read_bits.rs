@@ -271,7 +271,6 @@ pub enum DemoParserError {
     MalformedMessage,
     StringTableNotFound,
     Source1DemoError,
-    DemoEndsEarly(String),
     UnknownFile,
     IncorrectMetaDataProp,
     UnknownPropName(String),

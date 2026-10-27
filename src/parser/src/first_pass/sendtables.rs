@@ -193,7 +193,7 @@ impl<'a> FirstPassParser<'a> {
             };
 
             if f.field_enum_type.is_none() {
-                f.field_enum_type = Some(create_field(&sid, f, serializers, &mut self.qf_mapper)?)
+                f.field_enum_type = Some(create_field(f, serializers)?)
             }
             if let Some(Some(f)) = &field_data.get(fi) {
                 if let Some(field) = &f.field_enum_type {
@@ -367,7 +367,7 @@ impl ValueField {
     }
 }
 impl VectorField {
-    pub fn new(field_enum: Field, f: std::option::Option<Box<FieldType>>) -> VectorField {
+    pub fn new(field_enum: Field) -> VectorField {
         VectorField {
             field_enum: Box::new(field_enum),
             decoder: UnsignedDecoder,
@@ -539,17 +539,9 @@ pub fn get_propinfo(field: &Field, path: &FieldPath) -> Option<FieldInfo> {
 }
 
 fn create_field(
-    _sid: &String,
     fd: &mut ConstructorField,
     serializers: &AHashMap<String, Serializer>,
-    qf_mapper: &mut QfMapper,
 ) -> Result<Field, DemoParserError> {
-    let element_type = match fd.category {
-        FieldCategory::Array => fd.field_type.element_type.clone(),
-        FieldCategory::Vector => fd.field_type.generic_type.clone(),
-        _ => Some(Box::new(fd.field_type.clone())),
-    };
-
     let element_field = match fd.serializer_name.as_ref() {
         Some(name) => {
             let ser = match serializers.get(name.as_str()) {
@@ -567,7 +559,7 @@ fn create_field(
 
     let element_field = match fd.category {
         FieldCategory::Array => Field::Array(ArrayField::new(element_field, fd.field_type.count.unwrap_or(0) as usize)),
-        FieldCategory::Vector => Field::Vector(VectorField::new(element_field, element_type)),
+        FieldCategory::Vector => Field::Vector(VectorField::new(element_field)),
         _ => return Ok(element_field),
     };
     Ok(element_field)

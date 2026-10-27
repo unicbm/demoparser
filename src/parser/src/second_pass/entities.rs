@@ -1,4 +1,3 @@
-use crate::first_pass::prop_controller::ITEM_PURCHASE_DEF_IDX;
 use crate::first_pass::prop_controller::GLOVE_ATTRIBUTE_DEF_INDEX_ID;
 use crate::first_pass::prop_controller::GLOVE_PAINT_ID;
 use crate::first_pass::prop_controller::WEAPON_ATTRIBUTE_DEF_INDEX_ID;
@@ -657,7 +656,7 @@ mod tests {
             name: "CEconItemAttribute".to_string(),
             fields: vec![Field::Value(definition), Field::Value(value)],
         };
-        Field::Vector(VectorField::new(Field::Serializer(SerializerField::new(&attributes)), None))
+        Field::Vector(VectorField::new(Field::Serializer(SerializerField::new(&attributes))))
     }
 
     #[test]
@@ -707,7 +706,7 @@ mod tests {
         let info = get_propinfo(&field, &path).unwrap();
         assert_eq!(info.prop_id, MY_WEAPONS_OFFSET + 250_001);
         assert!(changes_inventory_snapshot(&field, Some(info), false, &ids));
-        let vector = Field::Vector(VectorField::new(Field::Value(value), None));
+        let vector = Field::Vector(VectorField::new(Field::Value(value)));
         path.last = 1;
         assert!(changes_inventory_snapshot(&vector, get_propinfo(&vector, &path), false, &ids));
     }

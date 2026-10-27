@@ -104,7 +104,7 @@ pub struct Frame {
 
 impl<'a> FirstPassParser<'a> {
     pub fn parse_header_only(&mut self, demo_bytes: &'a [u8]) -> Result<AHashMap<String, String>, DemoParserError> {
-        self.handle_short_header(demo_bytes.len(), &demo_bytes[..HEADER_ENDS_AT_BYTE])?;
+        self.handle_short_header(demo_bytes)?;
         let frame = self.read_frame(demo_bytes)?;
         let bytes = self.slice_packet_bytes(demo_bytes, frame.size)?;
         if frame.demo_cmd != EDemoCommands::DemFileHeader {
@@ -117,7 +117,7 @@ impl<'a> FirstPassParser<'a> {
         if self.settings.cancelled.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
             return Err(DemoParserError::Cancelled);
         }
-        self.handle_short_header(demo_bytes.len(), &demo_bytes[..HEADER_ENDS_AT_BYTE])?;
+        self.handle_short_header(demo_bytes)?;
         let mut reuseable_buffer = vec![0_u8; 100_000];
         let profile_started = self.profile.start();
         // Loop that goes trough the entire file
@@ -454,7 +454,7 @@ impl<'a> FirstPassParser<'a> {
             return;
         }
     }
-    fn handle_short_header(&mut self, file_len: usize, bytes: &[u8]) -> Result<(), DemoParserError> {
+    fn handle_short_header(&mut self, bytes: &[u8]) -> Result<(), DemoParserError> {
         if bytes.len() < 16 {
             return Err(DemoParserError::OutOfBytesError);
         }
@@ -469,29 +469,6 @@ impl<'a> FirstPassParser<'a> {
                 }
             },
             Err(_) => {}
-        };
-        // hmmmm not sure where the 18 comes from if the header is only 16?
-        // can be used to check that file ends early
-        let file_length_expected = match bytes[8..12].try_into() {
-            Err(_) => return Err(DemoParserError::OutOfBytesError),
-            Ok(arr) => u32::from_le_bytes(arr) + 18,
-        };
-        /* Remove for now. Seems to cause too many issues.
-
-        let missing_percentage = 100.0 - (file_len as f32 / file_length_expected as f32 * 100.0);
-        if missing_percentage > 10.0 {
-            return Err(DemoParserError::DemoEndsEarly(format!(
-                "demo ends early. Expected legth: {}, file lenght: {}. Missing: {:.2}%",
-                file_length_expected,
-                file_len,
-                100.0 - (file_len as f32 / file_length_expected as f32 * 100.0),
-            )));
-        }
-        */
-        // seems to be byte offset to where DEM_END command happens. After that comes Spawngroups and fileinfo. odd...
-        let _no_clue_what_this_is = match bytes[8..12].try_into() {
-            Err(_) => return Err(DemoParserError::OutOfBytesError),
-            Ok(arr) => i32::from_le_bytes(arr),
         };
         self.ptr = HEADER_ENDS_AT_BYTE;
         Ok(())

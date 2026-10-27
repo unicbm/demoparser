@@ -2439,16 +2439,6 @@ fn glove_paint_seed_from_attribute(value: Variant) -> Option<u32> {
     }
 }
 
-fn inventory_cosmetics_are_reusable(
-    cached_player_signature: (u32, Option<u64>, Option<u32>),
-    cached_weapon_signature: &[(i32, u32, u64)],
-    current_player_signature: (u32, Option<u64>, Option<u32>),
-    current_weapon_signature: &[(i32, u32, u64)],
-) -> bool {
-    cached_player_signature == current_player_signature
-        && cached_weapon_signature == current_weapon_signature
-}
-
 fn current_inventory_snapshot(
     cache: &std::cell::RefCell<ahash::AHashMap<i32, PlayerInventorySnapshot>>,
     entity_id: i32,
@@ -2493,7 +2483,7 @@ mod tests {
     }
 
     use super::{
-        current_inventory_snapshot, inventory_cosmetics_are_reusable,
+        current_inventory_snapshot,
         glove_paint_seed_from_attribute, is_map_based_default_agent,
         stickers_from_attributes, should_collect_player_rows, StickerAttribute,
     };
@@ -2898,30 +2888,6 @@ mod tests {
             glove_paint_seed_from_attribute(Variant::F32(-1.0)),
             None
         );
-    }
-
-    #[test]
-    fn inventory_snapshot_reuse_requires_same_player_side_and_weapon_revisions() {
-        let player = (12, Some(76561198000000001), Some(2));
-        let weapons = [(41, 3, 8), (42, 1, 5)];
-        assert!(inventory_cosmetics_are_reusable(
-            player,
-            &weapons,
-            player,
-            &weapons,
-        ));
-        assert!(!inventory_cosmetics_are_reusable(
-            player,
-            &weapons,
-            (12, Some(76561198000000001), Some(3)),
-            &weapons,
-        ));
-        assert!(!inventory_cosmetics_are_reusable(
-            player,
-            &weapons,
-            player,
-            &[(41, 3, 9), (42, 1, 5)],
-        ));
     }
 
     #[test]
