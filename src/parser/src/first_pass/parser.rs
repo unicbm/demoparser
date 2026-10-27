@@ -34,6 +34,26 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 pub const HEADER_ENDS_AT_BYTE: usize = 16;
+// Bound each decoded frame/table independently of the outer demo file size.
+const MAX_DECOMPRESSED_BYTES: usize = 64 * 1024 * 1024;
+
+pub(crate) fn decompress_snappy(bytes: &[u8]) -> Result<Vec<u8>, DemoParserError> {
+    let mut output = Vec::new();
+    FirstPassParser::resize_if_needed(&mut output, decompress_len(bytes))?;
+    let len = SnapDecoder::new()
+        .decompress(bytes, &mut output)
+        .map_err(|error| DemoParserError::DecompressionFailure(error.to_string()))?;
+    output.truncate(len);
+    Ok(output)
+}
+
+fn checked_class_index(class_id: i32, table_len: usize) -> Result<usize, DemoParserError> {
+    let index = usize::try_from(class_id).map_err(|_| DemoParserError::ClsIdOutOfBounds)?;
+    if index >= table_len {
+        return Err(DemoParserError::ClsIdOutOfBounds);
+    }
+    Ok(index)
+}
 
 pub struct ParserThreadInput<'a> {
     pub offset: usize,
@@ -209,7 +229,11 @@ impl<'a> FirstPassParser<'a> {
     pub fn resize_if_needed(buf: &mut Vec<u8>, needed_len: Result<usize, snap::Error>) -> Result<(), DemoParserError> {
         match needed_len {
             Ok(len) => {
+                if len > MAX_DECOMPRESSED_BYTES {
+                    return Err(DemoParserError::DecompressionFailure("decoded frame exceeds 64 MiB limit".to_string()));
+                }
                 if buf.len() < len {
+                    buf.try_reserve_exact(len - buf.len()).map_err(|_| DemoParserError::VectorResizeFailure)?;
                     buf.resize(len, 0)
                 }
             }
@@ -492,10 +516,11 @@ impl<'a> FirstPassParser<'a> {
         ];
         for class_t in msg.classes {
             let cls_id = class_t.class_id();
+            let cls_index = checked_class_index(cls_id, cls_by_id.len())?;
             let network_name = class_t.network_name();
 
             if let Some(ser) = serializers.remove(network_name) {
-                cls_by_id[cls_id as usize] = Class {
+                cls_by_id[cls_index] = Class {
                     class_id: cls_id,
                     name: network_name.to_string(),
                     serializer: ser,
@@ -506,5 +531,35 @@ impl<'a> FirstPassParser<'a> {
         self.qf_mapper = qf_mapper;
         self.prop_controller = p;
         return Ok(());
+    }
+}
+
+#[cfg(test)]
+mod bounds_tests {
+    use super::*;
+
+    #[test]
+    fn class_indices_must_fit_the_declared_table() {
+        assert_eq!(checked_class_index(0, 2), Ok(0));
+        assert_eq!(checked_class_index(1, 2), Ok(1));
+        assert_eq!(checked_class_index(-1, 2), Err(DemoParserError::ClsIdOutOfBounds));
+        assert_eq!(checked_class_index(2, 2), Err(DemoParserError::ClsIdOutOfBounds));
+    }
+
+    #[test]
+    fn oversized_decoded_lengths_are_rejected_before_allocation() {
+        let mut buffer = vec![1, 2, 3];
+        let capacity = buffer.capacity();
+        assert!(FirstPassParser::resize_if_needed(&mut buffer, Ok(MAX_DECOMPRESSED_BYTES + 1)).is_err());
+        assert_eq!(buffer, [1, 2, 3]);
+        assert_eq!(buffer.capacity(), capacity);
+    }
+
+    #[test]
+    fn bounded_snappy_decodes_normal_data_and_rejects_truncation() {
+        let data = b"normal string table contents";
+        let compressed = snap::raw::Encoder::new().compress_vec(data).unwrap();
+        assert_eq!(decompress_snappy(&compressed).unwrap(), data);
+        assert!(decompress_snappy(&compressed[..compressed.len() - 1]).is_err());
     }
 }

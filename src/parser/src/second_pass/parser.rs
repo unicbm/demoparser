@@ -640,18 +640,6 @@ impl<'a> SecondPassParser<'a> {
             false => Ok(possibly_uncompressed_bytes),
         }
     }
-    pub fn resize_if_needed(buf: &mut Vec<u8>, needed_len: Result<usize, snap::Error>) -> Result<(), DemoParserError> {
-        match needed_len {
-            Ok(len) => {
-                if buf.len() < len {
-                    buf.resize(len, 0)
-                }
-            }
-            Err(e) => return Err(DemoParserError::DecompressionFailure(e.to_string())),
-        };
-        Ok(())
-    }
-
     pub fn parse_packet(&mut self, bytes: &[u8], buf: &mut Vec<u8>) -> Result<(), DemoParserError> {
         let started = self.profile.start();
         let msg = match CDemoPacket::decode(bytes) {

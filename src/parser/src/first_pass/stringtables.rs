@@ -5,7 +5,7 @@ use csgoproto::CMsgPlayerInfo;
 use csgoproto::CsvcMsgCreateStringTable;
 use csgoproto::CsvcMsgUpdateStringTable;
 use prost::Message;
-use snap::raw::Decoder;
+use crate::first_pass::parser::decompress_snappy;
 
 #[derive(Clone, Debug)]
 pub struct StringTable {
@@ -70,9 +70,7 @@ impl<'a> FirstPassParser<'a> {
             return Ok(());
         }
         let bytes = match table.data_compressed() {
-            true => snap::raw::Decoder::new()
-                .decompress_vec(table.string_data())
-                .map_err(|_| DemoParserError::MalformedMessage)?,
+            true => decompress_snappy(table.string_data())?,
             false => table.string_data().to_vec(),
         };
         self.parse_string_table(
@@ -160,7 +158,7 @@ impl<'a> FirstPassParser<'a> {
                     }
                     value = bitreader.read_n_bytes((bits.checked_div(8).unwrap_or(0)) as usize)?;
                     value = if is_compressed {
-                        match Decoder::new().decompress_vec(&value) {
+                        match decompress_snappy(&value) {
                             Ok(bytes) => bytes,
                             Err(_) => return Err(DemoParserError::MalformedMessage),
                         }
@@ -231,9 +229,7 @@ impl<'a> SecondPassParser<'a> {
     pub fn parse_create_stringtable(&mut self, bytes: &[u8]) -> Result<(), DemoParserError> {
         let table = CsvcMsgCreateStringTable::decode(bytes).map_err(|_| DemoParserError::MalformedMessage)?;
         let bytes = match table.data_compressed() {
-            true => snap::raw::Decoder::new()
-                .decompress_vec(table.string_data())
-                .map_err(|_| DemoParserError::MalformedMessage)?,
+            true => decompress_snappy(table.string_data())?,
             false => table.string_data().to_vec(),
         };
         self.parse_string_table(
@@ -320,7 +316,7 @@ impl<'a> SecondPassParser<'a> {
                     }
                     value = bitreader.read_n_bytes((bits.checked_div(8).unwrap_or(0)) as usize)?;
                     value = if is_compressed {
-                        match Decoder::new().decompress_vec(&value) {
+                        match decompress_snappy(&value) {
                             Ok(bytes) => bytes,
                             Err(_) => return Err(DemoParserError::MalformedMessage),
                         }
