@@ -9,7 +9,7 @@ use crate::first_pass::prop_controller::{PropController, USERCMD_ATTACK_START_HI
     USERCMD_ATTACK_START_HISTORY_INDEX_2, USERCMD_CLIENT_TICK, USERCMD_CONSUMED_SERVER_ANGLE_CHANGES,
     USERCMD_FORWARDMOVE, USERCMD_IMPULSE, USERCMD_LEFTMOVE, USERCMD_MOUSE_DX, USERCMD_MOUSE_DY,
     USERCMD_SUBTICK_LEFT_HAND_DESIRED, USERCMD_UPMOVE, USERCMD_VIEWANGLE_X, USERCMD_VIEWANGLE_Y,
-    USERCMD_VIEWANGLE_Z, USERCMD_WEAPON_SELECT};
+    USERCMD_VIEWANGLE_Z, USERCMD_WEAPON_SELECT, USERCMD_HAS_INPUT_HISTORY};
 use crate::first_pass::sendtables::Field;
 use ahash::AHashMap;
 
@@ -58,7 +58,7 @@ fn usercmd_scalar_kind(property_id: u32) -> Option<ScalarKind> {
         USERCMD_IMPULSE | USERCMD_MOUSE_DX | USERCMD_MOUSE_DY | USERCMD_WEAPON_SELECT
         | USERCMD_CLIENT_TICK | USERCMD_ATTACK_START_HISTORY_INDEX_1
         | USERCMD_ATTACK_START_HISTORY_INDEX_2 => Some(ScalarKind::I32),
-        USERCMD_SUBTICK_LEFT_HAND_DESIRED => Some(ScalarKind::Bool),
+        USERCMD_SUBTICK_LEFT_HAND_DESIRED | USERCMD_HAS_INPUT_HISTORY => Some(ScalarKind::Bool),
         USERCMD_CONSUMED_SERVER_ANGLE_CHANGES => Some(ScalarKind::U32),
         _ => None,
     }
@@ -597,6 +597,7 @@ mod tests {
             assert_eq!(usercmd_scalar_kind(id), Some(ScalarKind::I32));
         }
         assert_eq!(usercmd_scalar_kind(USERCMD_SUBTICK_LEFT_HAND_DESIRED), Some(ScalarKind::Bool));
+        assert_eq!(usercmd_scalar_kind(USERCMD_HAS_INPUT_HISTORY), Some(ScalarKind::Bool));
         assert_eq!(usercmd_scalar_kind(USERCMD_CONSUMED_SERVER_ANGLE_CHANGES), Some(ScalarKind::U32));
         for id in [USERCMD_BUTTONSTATE_1, USERCMD_BUTTONSTATE_2, USERCMD_BUTTONSTATE_3,
             USERCMD_INPUT_HISTORY_BASEID, USERCMD_SUBTICK_MOVES_BASEID] {

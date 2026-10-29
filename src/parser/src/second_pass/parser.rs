@@ -774,10 +774,19 @@ impl<'a> SecondPassParser<'a> {
                 input_history: std::mem::take(&mut self.usercmd_full_history_scratch),
                 ..Default::default()
             };
-            if user_cmd.merge(&bytes[cmd.data.0..cmd.data.0 + cmd.data.1]).is_err() {
-                self.usercmd_full_history_scratch = user_cmd.input_history;
-                return Ok(());
-            }
+            let data = &bytes[cmd.data.0..cmd.data.0 + cmd.data.1];
+            let decoded = if self.retain_input_history {
+                user_cmd.merge(data).map(|()| user_cmd.input_history.len())
+            } else {
+                usercmd_wire::merge_with_history_len(data, &mut user_cmd)
+            };
+            let history_count = match decoded {
+                Ok(count) => count,
+                Err(_) => {
+                    self.usercmd_full_history_scratch = user_cmd.input_history;
+                    return Ok(());
+                }
+            };
             self.profile.phase(5, decode_started);
             let apply_started = self.profile.start();
             let left_hand_desired = user_cmd.left_hand_desired();
@@ -785,16 +794,27 @@ impl<'a> SecondPassParser<'a> {
                 user_cmd.attack1_start_history_index.unwrap_or(-1);
             let attack2_start_history_index =
                 user_cmd.attack2_start_history_index.unwrap_or(-1);
-            let UserCmdPlayerState { history: input_history_baseline, subticks: subtick_baseline, history_output } =
+            let UserCmdPlayerState { history: input_history_baseline, history_len, subticks: subtick_baseline, history_output } =
                 self.usercmd_players.entry(player_slot).or_default();
-            self.usercmd_full_history_scratch = std::mem::replace(input_history_baseline, user_cmd.input_history);
+            *history_len = history_count;
+            self.usercmd_full_history_scratch = if self.retain_input_history {
+                std::mem::replace(input_history_baseline, user_cmd.input_history)
+            } else {
+                user_cmd.input_history
+            };
             *history_output = None;
             *subtick_baseline = user_cmd.base.as_mut().map(|base| std::mem::take(&mut base.subtick_moves)).unwrap_or_default();
             if let Some(base) = user_cmd.base {
                 let entity_id = demo_network_ehandle_index(base.pawn_entity_handle());
                 if let Some(Some(ent)) = self.entities.get_mut(entity_id as usize) {
-                    let history = history_output.get_or_insert_with(|| shared_input_history(input_history_baseline)).clone();
-                    ent.props.insert(USERCMD_INPUT_HISTORY_BASEID, Variant::InputHistory(history));
+                    if self.retain_input_history {
+                        let history = history_output.get_or_insert_with(|| shared_input_history(input_history_baseline)).clone();
+                        ent.props.insert(USERCMD_INPUT_HISTORY_BASEID, Variant::InputHistory(history));
+                    }
+                    if self.collect_input_history_presence {
+                        commit_usercmd_scalar!(self, ent, USERCMD_HAS_INPUT_HISTORY,
+                            Variant::Bool(*history_len != 0));
+                    }
                     commit_usercmd_scalar!(self, ent,
                         USERCMD_ATTACK_START_HISTORY_INDEX_1,
                         Variant::I32(attack1_start_history_index)
@@ -860,14 +880,21 @@ impl<'a> SecondPassParser<'a> {
         history_payloads: impl IntoIterator<Item = &'b [u8]>,
         subtick_payloads: impl IntoIterator<Item = &'b [u8]>,
     ) {
-        let UserCmdPlayerState { history: input_history_baseline, subticks: subtick_baseline, history_output } =
+        let UserCmdPlayerState { history: input_history_baseline, history_len, subticks: subtick_baseline, history_output } =
             self.usercmd_players.entry(player_slot).or_default();
         // Invalid repeated deltas retain the preceding baseline, as before.
-        if usercmd_delta::apply_repeated_iter(history_payloads, input_history_baseline,
-            &mut self.usercmd_history_scratch, |_, _| {}).unwrap_or(false) {
-            *history_output = None;
+        if self.retain_input_history {
+            if usercmd_delta::apply_repeated_iter(history_payloads, input_history_baseline,
+                &mut self.usercmd_history_scratch, |_, _| {}).unwrap_or(false) {
+                *history_output = None;
+            }
+            *history_len = input_history_baseline.len();
+        } else if let Some(count) = usercmd_delta::repeated_len::<CsgoInputHistoryEntryPb>(history_payloads, *history_len) {
+            *history_len = count;
         }
-        let input_history = history_output.get_or_insert_with(|| shared_input_history(input_history_baseline)).clone();
+        let has_input_history = *history_len != 0;
+        let input_history = self.retain_input_history
+            .then(|| history_output.get_or_insert_with(|| shared_input_history(input_history_baseline)).clone());
         let left_hand_desired = user_cmd.left_hand_desired;
         let attack1_start_history_index = user_cmd.attack1_start_history_index.unwrap_or(-1);
         let attack2_start_history_index = user_cmd.attack2_start_history_index.unwrap_or(-1);
@@ -913,7 +940,12 @@ impl<'a> SecondPassParser<'a> {
             return;
         };
 
-        ent.props.insert(USERCMD_INPUT_HISTORY_BASEID, Variant::InputHistory(input_history));
+        if let Some(input_history) = input_history {
+            ent.props.insert(USERCMD_INPUT_HISTORY_BASEID, Variant::InputHistory(input_history));
+        }
+        if self.collect_input_history_presence {
+            commit_usercmd_scalar!(self, ent, USERCMD_HAS_INPUT_HISTORY, Variant::Bool(has_input_history));
+        }
         ent.props.insert(USERCMD_SUBTICK_MOVES_BASEID, Variant::UserCmdSubtickMoves(subtick_moves));
         commit_usercmd_scalar!(self, ent,
             USERCMD_ATTACK_START_HISTORY_INDEX_1,
@@ -1064,6 +1096,111 @@ impl<'a> SecondPassParser<'a> {
 #[cfg(test)]
 mod sparse_usercmd_tests {
     use super::*;
+
+    #[test]
+    fn history_presence_matches_full_history_across_commands_and_entity_lifetimes() {
+        use crate::first_pass::parser_settings::FirstPassParser;
+        use crate::second_pass::variants::{PropColumn, VarVec};
+        use std::sync::Arc;
+
+        let huffman = Vec::new();
+        let settings = ParserInputs {
+            real_name_to_og_name: AHashMap::default(), wanted_players: vec![],
+            wanted_player_props: vec!["usercmd_has_input_history".into()], wanted_other_props: vec![],
+            wanted_prop_states: AHashMap::default(), wanted_ticks: vec![], wanted_events: vec![],
+            parse_ents: true, parse_projectiles: false, collect_projectile_records: false,
+            parse_grenades: false, only_header: false, only_convars: false,
+            huffman_lookup_table: &huffman, order_by_steamid: false, list_props: false,
+            fallback_bytes: None, cancelled: None,
+        };
+        let mut first = FirstPassParser::new(&settings);
+        first.cls_by_id = Some(Arc::new(vec![]));
+        first.prop_controller.prop_infos = vec![PropInfo {
+            id: USERCMD_HAS_INPUT_HISTORY, prop_type: PropType::Player,
+            prop_name: "usercmd_has_input_history".into(),
+            prop_friendly_name: "usercmd_has_input_history".into(), is_player_prop: true,
+        }];
+        let mut projected = SecondPassParser::new(first.create_first_pass_output().unwrap(), 0,
+            true, None, DecodePlan::FULL).unwrap();
+        assert!(projected.collect_input_history_presence);
+        assert!(!projected.retain_input_history);
+        let mut full_first = FirstPassParser::new(&settings);
+        full_first.cls_by_id = first.cls_by_id.clone();
+        full_first.prop_controller.prop_infos = first.prop_controller.prop_infos.clone();
+        full_first.prop_controller.prop_infos.push(PropInfo {
+            id: USERCMD_INPUT_HISTORY_BASEID, prop_type: PropType::Custom,
+            prop_name: "usercmd_input_history".into(), prop_friendly_name: "usercmd_input_history".into(),
+            is_player_prop: true,
+        });
+        let mut full = SecondPassParser::new(full_first.create_first_pass_output().unwrap(), 0,
+            true, None, DecodePlan::FULL).unwrap();
+        assert!(full.retain_input_history && full.collect_input_history_presence);
+        let entity = || Entity {
+            cls_id: 0, entity_id: 1, serial: 1, props: Default::default(),
+            entity_type: EntityType::Normal, cosmetic_revision: 0, usercmd_scalar_cache: None,
+        };
+        projected.entities[1] = Some(entity());
+        full.entities[1] = Some(entity());
+        let mut expected = Vec::new();
+        let mut observe = |projected: &mut SecondPassParser<'_>, full: &SecondPassParser<'_>| {
+            let history = full.entities[1].as_ref().unwrap().props.get(&USERCMD_INPUT_HISTORY_BASEID);
+            let present = match history {
+                Some(Variant::InputHistory(history)) => Some(!history.is_empty()),
+                None => None,
+                _ => panic!("unexpected history type"),
+            };
+            let props = &projected.entities[1].as_ref().unwrap().props;
+            assert_eq!(props.get(&USERCMD_HAS_INPUT_HISTORY), present.map(Variant::Bool).as_ref());
+            assert!(!props.contains_key(&USERCMD_INPUT_HISTORY_BASEID));
+            assert!(projected.usercmd_players.values().all(|player| player.history_output.is_none()));
+            assert!(projected.usercmd_players.values().all(|player| player.history.is_empty()));
+            for (slot, player) in &projected.usercmd_players {
+                assert_eq!(player.history_len, full.usercmd_players[slot].history.len());
+            }
+            projected.sparse_scalar_columns.as_mut().unwrap().record_row(1, true);
+            expected.push(present);
+        };
+        observe(&mut projected, &full);
+        for count in [0, 2] {
+            let command = CsgoUserCmdPb {
+                base: Some(csgoproto::CBaseUserCmdPb { pawn_entity_handle: Some(1), ..Default::default() }),
+                input_history: vec![CsgoInputHistoryEntryPb::default(); count], ..Default::default()
+            };
+            let packet = CsvcMsgUserCommands { commands: vec![csgoproto::CMsgServerUserCmd {
+                data: Some(command.encode_to_vec().into()), player_slot: Some(0), ..Default::default()
+            }] }.encode_to_vec();
+            projected.parse_user_cmd(&packet).unwrap();
+            full.parse_user_cmd(&packet).unwrap();
+            observe(&mut projected, &full);
+        }
+        // Shrink, grow, malformed update, missing base, then publish the
+        // baseline changed by that missing-base command on the next command.
+        for (payload, has_base) in [(vec![7], true), (vec![23], true),
+            (vec![15, 10, 128], true), (vec![7], false), (vec![], true)] {
+            let command = DeltaCsgoUserCmdPb {
+                base: has_base.then(|| DeltaBaseUserCmdPb { pawn_entity_handle: Some(1), ..Default::default() }),
+                input_history_delta: vec![payload.into()], ..Default::default()
+            };
+            projected.apply_delta_user_cmd(command.clone(), 0);
+            full.apply_delta_user_cmd(command, 0);
+            observe(&mut projected, &full);
+        }
+        for parser in [&mut projected, &mut full] {
+            parser.entities[1] = Some(entity());
+            parser.sparse_scalar_columns.as_mut().unwrap().reset_entity(1);
+        }
+        observe(&mut projected, &full);
+        let command = DeltaCsgoUserCmdPb {
+            base: Some(DeltaBaseUserCmdPb { pawn_entity_handle: Some(1), ..Default::default() }),
+            input_history_delta: vec![vec![15].into()], ..Default::default()
+        };
+        projected.apply_delta_user_cmd(command.clone(), 0);
+        full.apply_delta_user_cmd(command, 0);
+        observe(&mut projected, &full);
+        let mut columns = vec![PropColumn::new()];
+        projected.sparse_scalar_columns.take().unwrap().finish(&mut columns);
+        assert_eq!(columns[0].data, Some(VarVec::Bool(expected)));
+    }
 
     #[test]
     fn scalar_cache_preserves_bits_types_and_network_overwrites() {

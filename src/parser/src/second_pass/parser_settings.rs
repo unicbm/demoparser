@@ -101,6 +101,8 @@ pub struct SecondPassParser<'a> {
     pub order_by_steamid: bool,
     pub last_tick: i32,
     pub parse_usercmd: bool,
+    pub(crate) retain_input_history: bool,
+    pub(crate) collect_input_history_presence: bool,
     pub(crate) usercmd_command_scratch: Vec<super::parser::usercmd_wire::CommandRange>,
     pub(crate) usercmd_delta_payload_scratch: super::parser::usercmd_delta::BorrowedPayloads,
     pub(crate) usercmd_full_history_scratch: Vec<CsgoInputHistoryEntryPb>,
@@ -115,6 +117,7 @@ pub struct SecondPassParser<'a> {
 #[derive(Default)]
 pub(crate) struct UserCmdPlayerState {
     pub history: Vec<CsgoInputHistoryEntryPb>,
+    pub history_len: usize,
     pub subticks: Vec<CSubtickMoveStep>,
     pub history_output: Option<Arc<[super::variants::InputHistory]>>,
 }
@@ -257,6 +260,15 @@ impl<'a> SecondPassParser<'a> {
             crate::profile::PropertyProfile::from_env(count, deferred)
         });
 
+        let mut history_props = first_pass_output.prop_controller.prop_infos.iter().map(|prop| prop.id)
+            .chain(first_pass_output.prop_controller.wanted_prop_state_infos.iter().map(|prop| prop.base.id));
+        let collect_input_history_presence = history_props.clone()
+            .any(|id| id == crate::first_pass::prop_controller::USERCMD_HAS_INPUT_HISTORY);
+        // Presence-only consumers validate all fields but only carry the list
+        // length across commands; full-history consumers retain the baseline.
+        let retain_input_history = !collect_input_history_presence
+            || history_props.any(|id| id == crate::first_pass::prop_controller::USERCMD_INPUT_HISTORY_BASEID);
+
         Ok(SecondPassParser {
             entity_projection: (decode_plan.project_entity_state && !debug && !first_pass_output.list_props)
                 .then(|| super::entity_projection::EntityProjection::new(first_pass_output.prop_controller,
@@ -268,6 +280,8 @@ impl<'a> SecondPassParser<'a> {
             cancelled: first_pass_output.settings.cancelled,
             uniq_prop_names: AHashSet::default(),
             parse_usercmd: contains_usercmd_prop(&first_pass_output.settings.wanted_player_props),
+            retain_input_history,
+            collect_input_history_presence,
             usercmd_command_scratch: Vec::new(),
             usercmd_delta_payload_scratch: Default::default(),
             usercmd_full_history_scratch: Vec::new(),

@@ -86,3 +86,9 @@ variant evidence arriving after its first observation. Record `tick` remains
 the first usable observation, not a proven native creation/subtick timestamp.
 
 The maintained parser also preserves the no-clip sentinel and separates both `m_pReserveAmmo` array elements; the primary count retains its legacy property name.
+
+`usercmd_has_input_history` projects continuous history state onto its list length,
+validating every entry and delta without retaining historical values or snapshots.
+Ordered index/length checks and invalid-delta rollback are preserved; requesting
+`usercmd_input_history` still returns the complete restored entries. Subtick
+movement continues to use its full baseline.

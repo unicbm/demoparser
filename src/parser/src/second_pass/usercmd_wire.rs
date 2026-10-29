@@ -76,11 +76,78 @@ pub(crate) fn decode_commands(input: &[u8], commands: &mut Vec<CommandRange>) ->
     Ok(())
 }
 
+/// Validate full history entries with the generated protobuf decoder without
+/// building the list. All other fields retain ordinary protobuf merge semantics.
+pub(crate) fn merge_with_history_len(mut bytes: &[u8], command: &mut csgoproto::CsgoUserCmdPb) -> Result<usize, DecodeError> {
+    let mut count = 0;
+    while !bytes.is_empty() {
+        let (tag, wire) = decode_key(&mut bytes)?;
+        if tag == 2 {
+            // merge_repeated uses this same merger/context before appending.
+            prost::encoding::message::merge(wire, &mut csgoproto::CsgoInputHistoryEntryPb::default(),
+                &mut bytes, DecodeContext::default())?;
+            count += 1;
+        } else {
+            command.merge_field(tag, wire, &mut bytes, DecodeContext::default())?;
+        }
+    }
+    Ok(count)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use csgoproto::{CMsgServerUserCmd, CsvcMsgUserCommands};
     use prost::Message;
+
+    #[test]
+    fn history_length_projection_matches_full_protobuf_validation() {
+        use csgoproto::{CBaseUserCmdPb, CMsgQAngle, CsgoInputHistoryEntryPb, CsgoUserCmdPb};
+        fn check(bytes: &[u8]) {
+            let expected = CsgoUserCmdPb::decode(bytes);
+            let mut actual = CsgoUserCmdPb::default();
+            let count = merge_with_history_len(bytes, &mut actual);
+            assert_eq!(count.is_ok(), expected.is_ok(), "{bytes:x?}");
+            if let Ok(mut expected) = expected {
+                assert_eq!(count.unwrap(), expected.input_history.len());
+                assert!(actual.input_history.is_empty());
+                expected.input_history.clear();
+                assert_eq!(actual.encode_to_vec(), expected.encode_to_vec());
+            }
+        }
+        let mut bytes = CsgoUserCmdPb {
+            input_history: (0..20).map(|tick| CsgoInputHistoryEntryPb {
+                render_tick_count: Some(tick),
+                view_angles: Some(CMsgQAngle { x: Some(-0.0), y: Some(2.5), z: None }),
+                ..Default::default()
+            }).collect(),
+            base: Some(CBaseUserCmdPb { client_tick: Some(123), ..Default::default() }),
+            ..Default::default()
+        }.encode_to_vec();
+        // Singular children merge across occurrences; histories append.
+        bytes.extend(CsgoUserCmdPb {
+            base: Some(CBaseUserCmdPb { pawn_entity_handle: Some(9), ..Default::default() }),
+            input_history: vec![CsgoInputHistoryEntryPb::default()], ..Default::default()
+        }.encode_to_vec());
+        check(&bytes);
+        for end in 0..bytes.len() { check(&bytes[..end]); }
+        for index in 0..bytes.len() {
+            for byte in [0, 7, 0x80, 0xff] {
+                let mut corrupt = bytes.clone();
+                corrupt[index] = byte;
+                check(&corrupt);
+            }
+        }
+        // Unknown nested groups must retain the generated decoder's depth limit.
+        for depth in [98, 99, 100, 101] {
+            let mut entry = vec![0x53; depth];
+            entry.extend(std::iter::repeat_n(0x54, depth));
+            let mut bytes = vec![0x12];
+            prost::encoding::encode_varint(entry.len() as u64, &mut bytes);
+            bytes.extend(entry);
+            check(&bytes);
+        }
+    }
 
     fn check(bytes: &[u8], scratch: &mut Vec<CommandRange>) {
         let oracle = CsvcMsgUserCommands::decode(bytes);

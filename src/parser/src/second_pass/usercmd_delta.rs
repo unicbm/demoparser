@@ -291,6 +291,45 @@ pub(super) fn apply_repeated_iter<'a, M: DeltaMessage + Clone>(
     Some(changed)
 }
 
+/// Project a repeated delta onto its length. Field validation is independent of
+/// the previous values: the schema controls wire types, children and resets.
+/// Keep the same ordered bounds checks and atomic failure as apply_repeated_iter.
+pub(super) fn repeated_len<'a, M: DeltaMessage>(
+    payloads: impl IntoIterator<Item = &'a [u8]>, previous: usize,
+) -> Option<usize> {
+    let mut count = previous;
+    let mut declared_count = false;
+    let mut largest_index = None;
+    for payload in payloads {
+        let mut bytes = payload;
+        if !bytes.is_empty() {
+            let mut after_marker = bytes;
+            let marker = read_delta_varint(&mut after_marker)?;
+            if marker & 7 == 7 {
+                if declared_count { return None; }
+                count = usize::try_from(marker >> 3).ok()?;
+                if largest_index.is_some_and(|index| index >= count) { return None; }
+                declared_count = true;
+                bytes = after_marker;
+            }
+        }
+        while !bytes.is_empty() {
+            let key = read_delta_varint(&mut bytes)?;
+            if key & 7 != 2 { return None; }
+            let index = usize::try_from(key >> 3).ok()?;
+            if index >= count { return None; }
+            let length = usize::try_from(read_delta_varint(&mut bytes)?).ok()?;
+            let (message, rest) = bytes.split_at_checked(length)?;
+            merge_message(&mut M::default(), message)?;
+            largest_index = Some(largest_index.map_or(index, |previous: usize| previous.max(index)));
+            bytes = rest;
+        }
+    }
+    // Match the full vector's capacity-overflow rejection without allocating it.
+    std::alloc::Layout::array::<M>(count).ok()?;
+    Some(count)
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::{decode_codegen_delta_repeated, sanitize_codegen_delta_message, write_delta_varint};
@@ -304,6 +343,62 @@ mod tests {
 
     fn reset(tag: u64, out: &mut Vec<u8>) {
         write_delta_varint((tag << 3) | 7, out);
+    }
+
+    #[test]
+    fn projected_length_matches_stateful_history_transactions() {
+        fn check(payloads: &[Vec<u8>], baseline: &[CsgoInputHistoryEntryPb]) {
+            let mut full = baseline.to_vec();
+            let expected = apply_repeated_iter(payloads.iter().map(Vec::as_slice), &mut full,
+                &mut Vec::new(), |_, _| {}).map(|_| full.len());
+            let projected = repeated_len::<CsgoInputHistoryEntryPb>(payloads.iter().map(Vec::as_slice), baseline.len());
+            assert_eq!(projected, expected, "{payloads:x?}");
+            if projected.is_none() { assert_eq!(full, baseline); }
+        }
+        let mut nested = CsgoInputHistoryEntryPb {
+            render_tick_count: Some(128), view_angles: Some(CMsgQAngle {
+                x: Some(1.25), y: Some(-0.0), z: None,
+            }), ..Default::default()
+        }.encode_to_vec();
+        reset(2, &mut nested);
+        let mut update = vec![0x1f]; // Three elements.
+        field(0, &nested, &mut update);
+        field(0, &[0x20, 9], &mut update); // Repeated update of the same entry.
+        field(2, &[], &mut update);
+        let baseline = vec![CsgoInputHistoryEntryPb {
+            render_tick_count: Some(7), cl_interp: Some(CsgoInterpolationInfoPbCl::default()),
+            ..Default::default()
+        }; 3];
+        check(&[update.clone()], &baseline);
+        for end in 0..update.len() { check(&[update[..end].to_vec()], &baseline); }
+        for index in 0..update.len() {
+            for byte in [0, 7, 0x80, 0xff] {
+                let mut corrupt = update.clone();
+                corrupt[index] = byte;
+                check(&[corrupt], &baseline);
+            }
+        }
+        // Exhaust the ordered bounds/length interactions, including markers
+        // after an earlier update and duplicate markers across payloads.
+        let mut payloads = vec![vec![], vec![7], vec![15], vec![23], vec![31]];
+        for index in 0..4 {
+            for body in [&[][..], &nested, &[0], &[0x27], &[0x3f]] {
+                let mut payload = Vec::new();
+                field(index, body, &mut payload);
+                payloads.push(payload);
+            }
+        }
+        for initial in 0..=3 {
+            for a in &payloads {
+                for b in &payloads {
+                    check(&[a.clone(), b.clone()], &baseline[..initial]);
+                }
+            }
+        }
+        // Bounds valid for usize can still overflow the full vector layout.
+        let mut overflow = Vec::new();
+        write_delta_varint(u64::MAX, &mut overflow);
+        check(&[overflow], &baseline);
     }
 
     fn reference_command(bytes: &[u8]) -> Option<DeltaCsgoUserCmdPb> {
